@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Accounts API Test</title>
+</head>
+<body>
+    <h1>Accounts API Test</h1>
+    <div id="result">Testing...</div>
+    
+    <script>
+        async function testAccountsAPI() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('Testing accounts API...');
+                
+                // Test the accounts API endpoint
+                const response = await fetch('/api/accounts', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = '✅ Accounts API working!<br>Response: ' + JSON.stringify(data, null, 2);
+                    console.log('✅ API Response:', data);
+                } else {
+                    resultDiv.innerHTML = '❌ Accounts API error: ' + response.status + ' ' + response.statusText;
+                    console.error('❌ API Error:', response.status);
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = '❌ API call failed: ' + error.message;
+                console.error('❌ Error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        testAccountsAPI();
+    </script>
+</body>
+</html>
