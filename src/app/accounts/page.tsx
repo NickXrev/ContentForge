@@ -768,7 +768,7 @@ export default function AccountsPage() {
                             <div className="mt-4">
                               <span className="font-medium text-gray-700 text-sm">Opportunities:</span>
                               <div className="mt-2 space-y-1">
-                                {(researchData.marketTrends?.opportunities || researchData.opportunities).slice(0, 2).map((opp, index) => (
+                                {(researchData.marketTrends?.opportunities || researchData.opportunities).slice(0, 2).map((opp: string, index: number) => (
                                   <p key={index} className="text-gray-600 text-xs">• {opp}</p>
                                 ))}
                               </div>
