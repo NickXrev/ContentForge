@@ -43,3 +43,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to initiate LinkedIn OAuth' }, { status: 500 })
   }
 }
+
+
+
+
+
+
+
+

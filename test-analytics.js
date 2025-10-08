@@ -14,3 +14,12 @@ if (window.simpleAnalytics) {
 
 // Test 3: Check Supabase connection
 console.log('Supabase client:', window.supabase);
+
+
+
+
+
+
+
+
+

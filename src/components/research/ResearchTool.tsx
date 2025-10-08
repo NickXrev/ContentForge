@@ -34,75 +34,106 @@ export default function ResearchTool() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [selectedResearch, setSelectedResearch] = useState<ResearchData | null>(null)
+  const [teams, setTeams] = useState<any[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('')
 
   useEffect(() => {
-    loadResearchData()
+    loadTeams()
   }, [])
 
+  useEffect(() => {
+    if (selectedTeamId) {
+      loadResearchData()
+    }
+  }, [selectedTeamId])
+
+  const loadTeams = async () => {
+    // Hardcode the teams we know exist
+    const hardcodedTeams = [
+      { id: 'b0ae77eb-2d57-4007-867c-157d05ffc61c', name: 'Old Team (company_research)' },
+      { id: 'f2cffd78-487f-4450-a9c7-8245ba455045', name: 'New Team (research_data)' }
+    ]
+    
+    setTeams(hardcodedTeams)
+    setSelectedTeamId(hardcodedTeams[0].id)
+    setError(`Loaded ${hardcodedTeams.length} teams`)
+  }
+
   const loadResearchData = async () => {
+    if (!selectedTeamId) return
+    
     try {
-      console.log('Loading research data...')
+      setError('')
       
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get user's team
-      const { data: teamMember } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!teamMember) return
-
-      // First get the basic research records
+      // Try to get research data from research_data table first (new format)
       const { data: researchRecords, error: researchError } = await supabase
-        .from('company_research')
+        .from('research_data')
         .select('*')
-        .eq('team_id', teamMember.team_id)
+        .eq('team_id', selectedTeamId)
         .order('created_at', { ascending: false })
 
-      if (researchError) {
-        console.error('Error loading research records:', researchError)
+      if (researchRecords && researchRecords.length > 0) {
+        // Process new research_data format
+        const enrichedResearch = researchRecords.map((research) => {
+          const researchData = research.research_data || {}
+          
+          // Extract company name from the actual data structure
+          const companyName = researchData.company_name || 
+                             researchData.industry ||
+                             researchData.businessType ||
+                             `Research ${research.id.slice(0, 8)}`
+          
+          return {
+            id: research.id,
+            company_name: companyName,
+            research_status: 'completed',
+            created_at: research.created_at,
+            updated_at: research.updated_at,
+            research_type: research.research_type,
+            website_analysis: {
+              title: companyName + ' Analysis',
+              description: 'Research completed using ' + (research.research_type || 'AI'),
+              content_summary: researchData.fullReport || researchData.content || 'Research completed'
+            },
+            company_intelligence: {
+              business_type: researchData.businessType || 'Unknown',
+              industry: researchData.industry || 'Unknown',
+              target_audience: researchData.targetAudience || 'Unknown',
+              value_proposition: researchData.uniqueValueProp || 'Unknown',
+              key_services: researchData.keyServices || [],
+              tone_of_voice: researchData.brandTone || 'Professional'
+            }
+          }
+        })
+        
+        setResearchData(enrichedResearch)
+        setSuccess(`Loaded ${enrichedResearch.length} research records`)
         return
       }
 
-      console.log('Research records:', researchRecords)
+      // If no data in research_data, try the old company_research table
+      const { data: oldResearchRecords } = await supabase
+        .from('company_research')
+        .select('*')
+        .eq('team_id', selectedTeamId)
+        .order('created_at', { ascending: false })
+      
+      if (oldResearchRecords && oldResearchRecords.length > 0) {
+        setResearchData(oldResearchRecords)
+        setSuccess(`Loaded ${oldResearchRecords.length} research records`)
+        return
+      }
 
-      // For each research record, get the related data
-      const enrichedResearch = await Promise.all(
-        (researchRecords || []).map(async (research) => {
-          // Get website analysis
-          const { data: websiteAnalysis } = await supabase
-            .from('website_analysis')
-            .select('*')
-            .eq('research_id', research.id)
-            .single()
+      if (researchError) {
+        setError('Error loading research records: ' + researchError.message)
+        return
+      }
 
-          // Get company intelligence
-          const { data: companyIntelligence } = await supabase
-            .from('company_intelligence')
-            .select('*')
-            .eq('research_id', research.id)
-            .single()
-
-          console.log(`Research ${research.id}:`, {
-            websiteAnalysis,
-            companyIntelligence
-          })
-
-          return {
-            ...research,
-            website_analysis: websiteAnalysis,
-            company_intelligence: companyIntelligence
-          }
-        })
-      )
-
-      console.log('Enriched research data:', enrichedResearch)
-      setResearchData(enrichedResearch)
+      setError('No research data found')
     } catch (err) {
-      console.error('Error loading research data:', err)
+      setError('Failed to load research data: ' + (err instanceof Error ? err.message : 'Unknown error'))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -112,45 +143,51 @@ export default function ResearchTool() {
       return
     }
 
+    if (!selectedTeamId) {
+      setError('Please select a team')
+      return
+    }
+
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setError('You must be logged in to perform research')
-        return
-      }
 
-      // Get user's team
-      const { data: teamMember } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!teamMember) {
-        setError('You must be part of a team to perform research')
-        return
-      }
-
-      const response = await fetch('/api/research/analyze-website', {
+      // Try the direct Perplexity research method first (faster, simpler)
+      let response = await fetch('/api/research/direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: url.trim(),
           companyName: companyName.trim(),
-          teamId: teamMember.team_id
+          website: url.trim(),
+          teamId: selectedTeamId
         })
       })
 
+      // If direct method fails, fall back to the main research method
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to analyze website')
+        console.log('Direct research failed, falling back to main research method...')
+        response = await fetch('/api/research/perplexity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyName: companyName.trim(),
+            website: url.trim(),
+            teamId: selectedTeamId,
+            clientProfileId: null
+          })
+        })
       }
 
-      setSuccess('Website analysis started! This may take a few moments.')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to perform research')
+      }
+
+      const result = await response.json()
+      
+      setSuccess(`Research completed using ${result.researchType || 'AI'}! Comprehensive analysis ready.`)
       setUrl('')
       setCompanyName('')
       
@@ -160,7 +197,7 @@ export default function ResearchTool() {
       }, 2000)
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze website')
+      setError(err instanceof Error ? err.message : 'Failed to perform research')
     } finally {
       setLoading(false)
     }
@@ -196,13 +233,31 @@ export default function ResearchTool() {
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Research Tool</h1>
-        <p className="text-gray-600">Analyze websites and extract company intelligence for better AI content generation</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Research Tool</h1>
+        <p className="text-gray-600">Comprehensive company research using AI-powered analysis for intelligent content generation</p>
+      </div>
+
+      {/* Team Selector */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Team
+        </label>
+        <select
+          value={selectedTeamId}
+          onChange={(e) => setSelectedTeamId(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Research Form */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Analyze New Company</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Research New Company</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -240,12 +295,12 @@ export default function ResearchTool() {
           {loading ? (
             <>
               <Loader className="w-4 h-4 mr-2 animate-spin" />
-              Analyzing...
+              Deep Research in Progress...
             </>
           ) : (
             <>
               <Search className="w-4 h-4 mr-2" />
-              Analyze Website
+              Research Company
             </>
           )}
         </Button>

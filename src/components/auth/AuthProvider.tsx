@@ -20,7 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('Initial session check:', { session, error })
       setUser(session?.user ?? null)
       setLoading(false)
     })
@@ -28,7 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', { event, session })
       setUser(session?.user ?? null)
       setLoading(false)
     })
@@ -45,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -55,6 +57,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     })
     if (error) throw error
+
+    // Create user in custom users table
+    if (data.user) {
+      const { error: userError } = await supabase
+        .from('users')
+        .insert([{
+          id: data.user.id,
+          email: data.user.email,
+          full_name: fullName,
+          role: 'editor'
+        }])
+
+      if (userError) {
+        console.error('Error creating user profile:', userError)
+        // Don't throw here as the auth user was created successfully
+      }
+    }
   }
 
   const signOut = async () => {
@@ -80,3 +99,4 @@ export function useAuth() {
   }
   return context
 }
+

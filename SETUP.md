@@ -97,3 +97,4 @@ Once the basic setup is working:
 - Check the console for error messages
 - Verify all environment variables are set
 - Ensure Supabase database schema is properly installed
+

@@ -12,13 +12,18 @@ import {
   Plus,
   Calendar as CalendarIcon,
   List,
-  Grid
+  Grid,
+  FileText,
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import PostVolumeChart from '@/components/calendar/PostVolumeChart'
 import CalendarGrid from '@/components/calendar/CalendarGrid'
 import ContentCard from '@/components/calendar/ContentCard'
 import SchedulePostModal from '@/components/calendar/SchedulePostModal'
 import { useCalendarData, CalendarPost } from '@/hooks/useCalendarData'
+import { supabase } from '@/lib/supabase'
 
 export default function CalendarPage() {
   // Use real data from database
@@ -29,7 +34,44 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showUnscheduled, setShowUnscheduled] = useState(true)
+  const [unscheduledContent, setUnscheduledContent] = useState<any[]>([])
+  const [schedulingPost, setSchedulingPost] = useState<{contentId: string, postId: string, platform: string, content: string} | null>(null)
+  const [scheduleData, setScheduleData] = useState({
+    date: '',
+    time: '',
+    platforms: [] as string[]
+  })
 
+  // Mock unscheduled content for now
+  const mockUnscheduledContent = [
+    {
+      id: '1',
+      title: 'The Complete Guide to Digital Marketing',
+      topic: 'Digital Marketing',
+      created_at: new Date().toISOString(),
+      social_posts: [
+        { id: '1', platform: 'twitter', content: '🚀 Just discovered the key to digital marketing! Here\'s what every marketer needs to know...' },
+        { id: '2', platform: 'linkedin', content: 'The landscape of digital marketing is evolving rapidly. Here\'s what industry leaders are doing differently...' },
+        { id: '3', platform: 'instagram', content: '✨ The digital marketing transformation you\'ve been waiting for! Swipe to see the complete guide 👆' }
+      ]
+    },
+    {
+      id: '2',
+      title: 'AI in Healthcare: Future Trends',
+      topic: 'AI Healthcare',
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      social_posts: [
+        { id: '4', platform: 'twitter', content: '🤖 AI is revolutionizing healthcare! Here are the trends shaping the future...' },
+        { id: '5', platform: 'linkedin', content: 'After analyzing 100+ AI healthcare implementations, I\'ve identified the common patterns that drive results.' },
+        { id: '6', platform: 'instagram', content: '🎯 Ready to explore AI in healthcare? Here\'s everything you need to know! 💫' }
+      ]
+    }
+  ]
+
+  useEffect(() => {
+    setUnscheduledContent(mockUnscheduledContent)
+  }, [])
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
@@ -114,6 +156,87 @@ export default function CalendarPage() {
   const handlePostScheduled = () => {
     // Refresh the calendar data when a post is scheduled
     window.location.reload() // Simple refresh for now
+  }
+
+  const handleScheduleUnscheduledPost = (contentId: string, postId: string, platform: string, content: string) => {
+    setSchedulingPost({ contentId, postId, platform, content })
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0]
+    setScheduleData({
+      date: today,
+      time: '12:00',
+      platforms: [platform]
+    })
+  }
+
+  const handleScheduleUnscheduled = async () => {
+    if (!schedulingPost) return
+
+    try {
+      const scheduledDateTime = new Date(`${scheduleData.date}T${scheduleData.time}`).toISOString()
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      // Get user's team
+      const { data: teamData, error: teamError } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (teamError || !teamData) {
+        throw new Error('User not part of any team')
+      }
+
+      // Save to content_documents table
+      const { data, error } = await supabase
+        .from('content_documents')
+        .insert([{
+          team_id: teamData.team_id,
+          title: `Scheduled ${schedulingPost.platform} post`,
+          content: schedulingPost.content,
+          platform: schedulingPost.platform,
+          created_by: user.id,
+          status: 'scheduled',
+          metadata: {
+            scheduled_at: scheduledDateTime,
+            original_content_id: schedulingPost.contentId
+          }
+        }])
+        .select()
+
+      if (error) {
+        console.error('Database error:', error)
+        throw error
+      }
+
+      console.log('Post scheduled successfully:', data)
+
+      // Remove the scheduled post from unscheduled content
+      setUnscheduledContent(prev => 
+        prev.map(content => 
+          content.id === schedulingPost.contentId
+            ? {
+                ...content,
+                social_posts: content.social_posts.filter((post: any) => post.id !== schedulingPost.postId)
+              }
+            : content
+        ).filter(content => content.social_posts.length > 0)
+      )
+
+      alert(`Post scheduled for ${scheduleData.date} at ${scheduleData.time}!`)
+      setSchedulingPost(null)
+      
+      // Refresh calendar data
+      window.location.reload()
+    } catch (error) {
+      console.error('Error scheduling post:', error)
+      alert(`Error scheduling post: ${error.message || 'Please try again.'}`)
+    }
   }
 
   // Show loading state
@@ -223,6 +346,18 @@ export default function CalendarPage() {
 
           {/* Right side - Actions */}
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowUnscheduled(!showUnscheduled)}
+              className={`p-2 rounded-md transition-colors ${
+                showUnscheduled 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              }`}
+              title={showUnscheduled ? 'Hide unscheduled content' : 'Show unscheduled content'}
+            >
+              <FileText className="w-5 h-5" />
+            </button>
+            
             <button className="p-2 rounded-md hover:bg-gray-100 transition-colors">
               <MoreHorizontal className="w-5 h-5 text-gray-600" />
             </button>
@@ -251,8 +386,92 @@ export default function CalendarPage() {
         <PostVolumeChart currentDate={currentDate} viewMode={viewMode} posts={posts} />
       </div>
 
-        {/* Calendar Content */}
-        <div className="flex-1 overflow-auto">
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Unscheduled Content Sidebar */}
+          <div className={`bg-gray-50 border-r border-gray-200 transition-all duration-300 ${
+            showUnscheduled ? 'w-80' : 'w-0'
+          } overflow-hidden`}>
+            <div className="h-full flex flex-col">
+              {/* Unscheduled Header */}
+              <div className="bg-white border-b border-gray-200 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Unscheduled Content</h3>
+                  <button
+                    onClick={() => setShowUnscheduled(!showUnscheduled)}
+                    className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  {unscheduledContent.length} content pieces ready to schedule
+                </p>
+              </div>
+
+              {/* Unscheduled Content List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {unscheduledContent.map((content) => (
+                  <div key={content.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+                          {content.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {content.topic} • {new Date(content.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button className="p-1 rounded hover:bg-gray-100 transition-colors">
+                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+
+                    {/* Social Posts */}
+                    <div className="space-y-2">
+                      {content.social_posts.map((post: any) => (
+                        <div key={post.id} className="bg-gray-50 rounded p-2 text-xs">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <div className={`w-2 h-2 rounded-full ${
+                              post.platform === 'twitter' ? 'bg-blue-500' :
+                              post.platform === 'linkedin' ? 'bg-blue-700' :
+                              post.platform === 'instagram' ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
+                              'bg-gray-500'
+                            }`} />
+                            <span className="font-medium text-gray-700 capitalize">
+                              {post.platform}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 line-clamp-2">
+                            {post.content}
+                          </p>
+                          <button 
+                            onClick={() => handleScheduleUnscheduledPost(content.id, post.id, post.platform, post.content)}
+                            className="mt-2 w-full text-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                          >
+                            Schedule
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {unscheduledContent.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No unscheduled content</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Create content in Content Studio
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Calendar Content */}
+          <div className="flex-1 overflow-auto">
           {viewMode === 'list' ? (
             <div className="p-6">
               {posts.length === 0 ? (
@@ -291,6 +510,7 @@ export default function CalendarPage() {
               onDelete={handleDeletePost}
             />
           )}
+          </div>
         </div>
 
         {/* Drag Overlay */}
@@ -313,6 +533,67 @@ export default function CalendarPage() {
         onClose={() => setShowScheduleModal(false)}
         onPostScheduled={handlePostScheduled}
       />
+
+      {/* Schedule Unscheduled Post Modal */}
+      {schedulingPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-lg p-6 w-full max-w-md mx-4"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Schedule {schedulingPost.platform.charAt(0).toUpperCase() + schedulingPost.platform.slice(1)} Post
+            </h3>
+            
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-700">{schedulingPost.content}</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={scheduleData.date}
+                  onChange={(e) => setScheduleData(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={scheduleData.time}
+                  onChange={(e) => setScheduleData(prev => ({ ...prev, time: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setSchedulingPost(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleUnscheduled}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Schedule
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </DndContext>
   )
 }

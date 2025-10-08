@@ -44,7 +44,7 @@ export function useUnscheduledPosts() {
         throw new Error('User not part of any team')
       }
 
-      // Fetch content documents WITHOUT scheduled_at dates (unscheduled posts)
+      // Fetch content documents that are NOT scheduled (status != 'scheduled' or no metadata.scheduled_at)
       const { data: contentData, error: contentError } = await supabase
         .from('content_documents')
         .select(`
@@ -57,11 +57,10 @@ export function useUnscheduledPosts() {
           updated_at,
           created_by,
           team_id,
-          hashtags,
-          topic
+          metadata
         `)
         .eq('team_id', teamData.team_id)
-        .is('scheduled_at', null)
+        .neq('status', 'scheduled')
         .order('created_at', { ascending: false })
 
       if (contentError) {
@@ -88,8 +87,10 @@ export function useUnscheduledPosts() {
       const { error } = await supabase
         .from('content_documents')
         .update({ 
-          scheduled_at: scheduledAt.toISOString(),
-          status: 'scheduled'
+          status: 'scheduled',
+          metadata: {
+            scheduled_at: scheduledAt.toISOString()
+          }
         })
         .eq('id', postId)
 
@@ -120,3 +121,6 @@ export function useUnscheduledPosts() {
     schedulePost
   }
 }
+
+
+

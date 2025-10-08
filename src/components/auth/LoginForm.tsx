@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from './AuthProvider'
 
 export function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('test@contentforge.com')
+  const [password, setPassword] = useState('testpassword123')
+  const [fullName, setFullName] = useState('Test User')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(true) // Start with signup for testing
   const { signIn, signUp } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +44,12 @@ export function LoginForm() {
           <p className="text-gray-600 mt-2">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+            <p><strong>Test Credentials:</strong></p>
+            <p>Email: test@contentforge.com</p>
+            <p>Password: testpassword123</p>
+            <p className="text-xs mt-1">Click "Create Account" to sign up, then "Sign in" to log in</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -19,7 +19,9 @@ import {
   Search,
   Globe,
   Target,
-  Edit3
+  Edit3,
+  CheckSquare,
+  Sparkles
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -48,10 +50,10 @@ const menuItems: MenuItem[] = [
     icon: Zap,
     children: [
       {
-        id: 'ai-studio',
-        label: 'AI Content Studio',
-        icon: FileText,
-        href: '/ai'
+        id: 'content-studio',
+        label: 'Content Studio',
+        icon: Sparkles,
+        href: '/content-studio'
       },
       {
         id: 'research',
@@ -72,6 +74,12 @@ const menuItems: MenuItem[] = [
     label: 'Inbox',
     icon: Inbox,
     href: '/inbox'
+  },
+  {
+    id: 'todos',
+    label: 'Todos & Tasks',
+    icon: CheckSquare,
+    href: '/todos'
   },
   {
     id: 'publishing',

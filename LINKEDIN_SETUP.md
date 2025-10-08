@@ -50,3 +50,11 @@ For production, update:
 - Redirect URLs in LinkedIn app settings
 - `NEXT_PUBLIC_APP_URL` to your production domain
 - Add production redirect URL to LinkedIn app
+
+
+
+
+
+
+
+

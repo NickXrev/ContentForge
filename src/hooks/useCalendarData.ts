@@ -45,7 +45,7 @@ export function useCalendarData() {
         throw new Error('User not part of any team')
       }
 
-      // Fetch content documents with scheduled_at dates
+      // Fetch content documents with scheduled posts (status = 'scheduled' and metadata.scheduled_at exists)
       const { data: contentData, error: contentError } = await supabase
         .from('content_documents')
         .select(`
@@ -54,15 +54,14 @@ export function useCalendarData() {
           content,
           platform,
           status,
-          scheduled_at,
           created_by,
           team_id,
-          hashtags,
-          topic
+          metadata
         `)
         .eq('team_id', teamData.team_id)
-        .not('scheduled_at', 'is', null)
-        .order('scheduled_at', { ascending: true })
+        .eq('status', 'scheduled')
+        .not('metadata->scheduled_at', 'is', null)
+        .order('metadata->scheduled_at', { ascending: true })
 
       if (contentError) {
         throw contentError
@@ -70,7 +69,7 @@ export function useCalendarData() {
 
       // Transform data to calendar format
       const transformedPosts: CalendarPost[] = (contentData || []).map((doc) => {
-        const scheduledDate = new Date(doc.scheduled_at)
+        const scheduledDate = new Date(doc.metadata?.scheduled_at)
         const dateString = scheduledDate.toISOString().split('T')[0]
         const timeString = scheduledDate.toLocaleTimeString('en-US', {
           hour: 'numeric',
@@ -87,7 +86,7 @@ export function useCalendarData() {
           scheduledTime: timeString,
           status: doc.status || 'scheduled',
           account: '@contentforge', // Default account
-          hashtags: doc.hashtags || [],
+          hashtags: [],
           created_by: doc.created_by,
           team_id: doc.team_id
         }
@@ -127,7 +126,11 @@ export function useCalendarData() {
       
       const { error } = await supabase
         .from('content_documents')
-        .update({ scheduled_at: newScheduledAt.toISOString() })
+        .update({ 
+          metadata: {
+            scheduled_at: newScheduledAt.toISOString()
+          }
+        })
         .eq('id', postId)
 
       if (error) {
