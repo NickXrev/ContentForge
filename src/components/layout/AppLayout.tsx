@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
+import LoginForm from '@/components/auth/LoginForm'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import RightSidebar from './RightSidebar'
