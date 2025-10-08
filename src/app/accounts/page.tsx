@@ -730,7 +730,7 @@ export default function AccountsPage() {
                             <div className="mt-4">
                               <span className="font-medium text-gray-700 text-sm">Audience Goals:</span>
                               <div className="mt-2 space-y-1">
-                                {(researchData.targetAudience?.audienceGoals || researchData.audienceGoals).slice(0, 3).map((goal, index) => (
+                                {(researchData.targetAudience?.audienceGoals || researchData.audienceGoals).slice(0, 3).map((goal: string, index: number) => (
                                   <p key={index} className="text-gray-600 text-xs">• {goal}</p>
                                 ))}
                               </div>
@@ -741,7 +741,7 @@ export default function AccountsPage() {
                             <div className="mt-4">
                               <span className="font-medium text-gray-700 text-sm">Pain Points:</span>
                               <div className="mt-2 space-y-1">
-                                {(researchData.targetAudience?.audiencePainPoints || researchData.audiencePainPoints).slice(0, 3).map((pain, index) => (
+                                {(researchData.targetAudience?.audiencePainPoints || researchData.audiencePainPoints).slice(0, 3).map((pain: string, index: number) => (
                                   <p key={index} className="text-gray-600 text-xs">• {pain}</p>
                                 ))}
                               </div>
