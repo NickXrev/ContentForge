@@ -170,7 +170,7 @@ Format your response with clear sections and provide specific, actionable insigh
         // Try to extract list items
         const listMatch = sentence.match(/(?:•|[-*]|\d+\.)\s*([^.!?]+)/g)
         if (listMatch) {
-          items.push(...listMatch.map(item => item.replace(/^[•-*\d.\s]+/, '').trim()).filter(item => item.length > 2))
+          items.push(...listMatch.map(item => item.replace(/^[•\-\*\d\.\s]+/, '').trim()).filter(item => item.length > 2))
         } else {
           // If no list format, try to split by common delimiters
           const parts = sentence.split(/[,;|]/).map(part => part.trim()).filter(part => part.length > 2)
