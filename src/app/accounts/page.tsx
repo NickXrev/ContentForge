@@ -756,7 +756,7 @@ export default function AccountsPage() {
                           </h4>
                           {(researchData.marketTrends?.marketTrends || researchData.marketTrends) && (researchData.marketTrends?.marketTrends || researchData.marketTrends).length > 0 ? (
                             <div className="space-y-2">
-                              {(researchData.marketTrends?.marketTrends || researchData.marketTrends).slice(0, 3).map((trend, index) => (
+                              {(researchData.marketTrends?.marketTrends || researchData.marketTrends).slice(0, 3).map((trend: string, index: number) => (
                                 <p key={index} className="text-gray-600 text-sm">• {trend}</p>
                               ))}
                             </div>
