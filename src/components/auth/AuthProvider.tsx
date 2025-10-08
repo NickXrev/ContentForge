@@ -81,19 +81,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      console.log('Starting signup process...')
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    })
-    if (error) throw error
+      })
+      
+      if (error) {
+        console.error('Supabase auth error:', error)
+        throw error
+      }
 
-    // Don't try to create user profile here - let the trigger handle it
-    // or create it after the user is confirmed
+      console.log('Auth signup successful:', data)
+      
+      // Try to create user profile immediately
+      if (data.user) {
+        console.log('Creating user profile for:', data.user.id)
+        
+        const { error: userError } = await supabase
+          .from('users')
+          .insert([{
+            id: data.user.id,
+            email: data.user.email,
+            full_name: fullName,
+            role: 'editor'
+          }])
+
+        if (userError) {
+          console.error('User profile creation error:', userError)
+          // Don't throw - just log the error
+        } else {
+          console.log('User profile created successfully')
+        }
+      }
+      
+    } catch (error) {
+      console.error('Signup error:', error)
+      throw error
+    }
   }
 
   const signOut = async () => {
