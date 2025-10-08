@@ -58,22 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     if (error) throw error
 
-    // Create user in custom users table
-    if (data.user) {
-      const { error: userError } = await supabase
-        .from('users')
-        .insert([{
-          id: data.user.id,
-          email: data.user.email,
-          full_name: fullName,
-          role: 'editor'
-        }])
-
-      if (userError) {
-        console.error('Error creating user profile:', userError)
-        // Don't throw here as the auth user was created successfully
-      }
-    }
+    // Don't try to create user profile here - let the trigger handle it
+    // or create it after the user is confirmed
   }
 
   const signOut = async () => {
