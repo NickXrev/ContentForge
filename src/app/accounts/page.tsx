@@ -150,6 +150,8 @@ export default function AccountsPage() {
   const handleResearchCompany = async () => {
     if (!clientProfile || !teamId) return
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+
     try {
       setIsResearching(true)
       setError(null)
@@ -157,7 +159,6 @@ export default function AccountsPage() {
 
       // Start cycling through forge messages with consistent timing
       let messageIndex = 0
-      let timeoutId: NodeJS.Timeout | null = null
       
       const cycleMessage = () => {
         messageIndex = (messageIndex + 1) % forgeMessages.length
