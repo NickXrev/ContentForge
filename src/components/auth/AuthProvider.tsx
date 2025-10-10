@@ -83,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       console.log('Starting signup process...')
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('Supabase Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Present' : 'Missing')
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -96,7 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('Supabase auth error:', error)
-        throw error
+        // Create a more detailed error object
+        const detailedError = new Error(error.message || 'Authentication failed')
+        ;(detailedError as any).status = error.status
+        ;(detailedError as any).statusText = error.statusText
+        ;(detailedError as any).details = error.details
+        ;(detailedError as any).hint = error.hint
+        throw detailedError
       }
 
       console.log('Auth signup successful:', data)

@@ -25,8 +25,42 @@ export function LoginForm() {
       } else {
         await signIn(email, password)
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+    } catch (err: any) {
+      console.error('Signup error details:', err)
+      
+      // Show detailed error information
+      let errorMessage = 'An error occurred'
+      
+      if (err?.message) {
+        errorMessage = err.message
+      }
+      
+      if (err?.status) {
+        errorMessage += ` (Status: ${err.status})`
+      }
+      
+      if (err?.statusText) {
+        errorMessage += ` - ${err.statusText}`
+      }
+      
+      if (err?.details) {
+        errorMessage += ` - Details: ${err.details}`
+      }
+      
+      if (err?.hint) {
+        errorMessage += ` - Hint: ${err.hint}`
+      }
+      
+      // Add environment variable check
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        errorMessage += ' - Missing NEXT_PUBLIC_SUPABASE_URL'
+      }
+      
+      if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        errorMessage += ' - Missing NEXT_PUBLIC_SUPABASE_ANON_KEY'
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
