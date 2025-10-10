@@ -72,7 +72,7 @@ export function LoginForm() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-md mx-auto"
     >
-      <div className="bg-white p-8 rounded-lg shadow-lg">
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-lg shadow-lg border-2 border-blue-200">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Welcome to ContentForge</h1>
           <p className="text-gray-600 mt-2">
