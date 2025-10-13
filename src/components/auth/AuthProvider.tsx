@@ -92,7 +92,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ;(detailedError as any).statusText = error.statusText
         ;(detailedError as any).details = error.details
         ;(detailedError as any).hint = error.hint
-        throw detailedError
+        // Fallback: try admin signup via server route for RLS-trigger failures
+        if ((error.message || '').includes('Database error saving new user')) {
+          const res = await fetch('/api/auth/admin-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, full_name: fullName })
+          })
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}))
+            throw Object.assign(new Error(body?.message || body?.error || 'Admin signup failed'), body)
+          }
+          // after admin create, sign in the user
+          const { error: signinError } = await supabase.auth.signInWithPassword({ email, password })
+          if (signinError) throw signinError
+        } else {
+          throw detailedError
+        }
       }
 
       console.log('Auth signup successful:', data)
