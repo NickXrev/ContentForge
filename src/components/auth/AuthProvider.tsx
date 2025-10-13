@@ -34,41 +34,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
 
-      // Create user profile when user signs in
+      // Create or update user profile when user signs in via server route
       if (event === 'SIGNED_IN' && session?.user) {
-        await createUserProfile(session.user)
+        await upsertUserProfile(session.user, session.user.user_metadata?.full_name)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const createUserProfile = async (user: User) => {
+  const upsertUserProfile = async (user: User, fullName?: string) => {
     try {
-      // Check if user profile already exists
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .single()
-
-      if (!existingUser) {
-        // Create user profile
-        const { error } = await supabase
-          .from('users')
-          .insert([{
-            id: user.id,
-            email: user.email || '',
-            full_name: user.user_metadata?.full_name || '',
-            role: 'editor'
-          }])
-
-        if (error) {
-          console.error('Error creating user profile:', error)
-        }
-      }
+      await fetch('/api/users/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, email: user.email, full_name: fullName || user.user_metadata?.full_name })
+      })
     } catch (error) {
-      console.error('Error creating user profile:', error)
+      console.error('User profile upsert error:', error)
     }
   }
 
@@ -109,25 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Auth signup successful:', data)
       
-      // Try to create user profile immediately
+      // Upsert user profile via server route immediately
       if (data.user) {
-        console.log('Creating user profile for:', data.user.id)
-        
-        const { error: userError } = await supabase
-          .from('users')
-          .insert([{
-            id: data.user.id,
-            email: data.user.email,
-            full_name: fullName,
-            role: 'editor'
-          }])
-
-        if (userError) {
-          console.error('User profile creation error:', userError)
-          // Don't throw - just log the error
-        } else {
-          console.log('User profile created successfully')
-        }
+        await upsertUserProfile(data.user, fullName)
       }
       
     } catch (error) {
