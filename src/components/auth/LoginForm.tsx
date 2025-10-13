@@ -63,6 +63,21 @@ export function LoginForm() {
         errorMessage += ' - Missing NEXT_PUBLIC_SUPABASE_ANON_KEY'
       }
       
+      // Append a raw debug object to surface any hidden fields from Supabase/Error
+      try {
+        const raw = {
+          name: err?.name,
+          message: err?.message,
+          code: err?.code,
+          status: err?.status,
+          statusText: err?.statusText,
+          details: err?.details,
+          hint: err?.hint,
+          stack: err?.stack?.split('\n').slice(0, 2).join(' | ')
+        }
+        errorMessage += `\nRaw: ${JSON.stringify(raw)}`
+      } catch {}
+
       setError(errorMessage)
     } finally {
       setLoading(false)
