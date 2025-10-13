@@ -12,10 +12,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(envServer.NEXT_PUBLIC_SUPABASE_URL, envServer.SUPABASE_SERVICE_ROLE_KEY)
 
-    // Check if user already exists
-    const existing = await supabase.auth.admin.listUsers({ page: 1, perPage: 1, email })
-    if ((existing as any)?.data?.users?.length) {
-      return NextResponse.json({ ok: true, user: (existing as any).data.users[0], existed: true })
+    // Check if user already exists by exact email match
+    const existing = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    const existingUser = existing.data?.users?.find((u: any) => u.email === email)
+    if (existingUser) {
+      return NextResponse.json({ ok: true, user: existingUser, existed: true })
     }
 
     // Create new user via Supabase admin
