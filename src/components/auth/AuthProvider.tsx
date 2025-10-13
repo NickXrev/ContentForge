@@ -101,13 +101,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
           if (!res.ok) {
             const body = await res.json().catch(() => ({}))
-            // If user might already exist, attempt sign-in and continue
-            if (body?.code === 'user_already_exists' || body?.code === 'unexpected_failure') {
-              const { error: signinError } = await supabase.auth.signInWithPassword({ email, password })
-              if (signinError) {
-                throw Object.assign(new Error(body?.message || body?.error || 'Admin signup failed'), body)
-              }
-            } else {
+            // Always attempt sign-in; if it works, continue
+            const { error: signinError } = await supabase.auth.signInWithPassword({ email, password })
+            if (signinError) {
               throw Object.assign(new Error(body?.message || body?.error || 'Admin signup failed'), body)
             }
           } else {
