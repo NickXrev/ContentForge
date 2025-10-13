@@ -25,7 +25,16 @@ export async function POST(request: NextRequest) {
       )
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'User upsert failed',
+          message: error.message,
+          details: (error as any).details,
+          hint: (error as any).hint,
+          code: (error as any).code,
+        },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ ok: true })

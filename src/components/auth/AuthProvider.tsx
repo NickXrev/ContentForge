@@ -45,11 +45,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const upsertUserProfile = async (user: User, fullName?: string) => {
     try {
-      await fetch('/api/users/upsert', {
+      const res = await fetch('/api/users/upsert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: user.id, email: user.email, full_name: fullName || user.user_metadata?.full_name })
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('Upsert failed:', body)
+        throw new Error(body?.message || body?.error || 'User upsert failed')
+      }
     } catch (error) {
       console.error('User profile upsert error:', error)
     }
