@@ -72,9 +72,9 @@ export function LoginForm() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-md mx-auto"
     >
-      <div className="bg-red-500 p-8 rounded-lg shadow-lg border-4 border-yellow-400" style={{backgroundColor: 'red', border: '5px solid yellow'}}>
+      <div className="bg-purple-600 p-8 rounded-lg shadow-lg border-4 border-yellow-400" style={{backgroundColor: 'purple', border: '5px solid yellow'}}>
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">🚀 DEPLOYMENT TEST - RED BACKGROUND! 🚀</h1>
+          <h1 className="text-3xl font-bold text-white">🚀 DEPLOYMENT TEST - PURPLE BACKGROUND! 🚀</h1>
           <p className="text-gray-600 mt-2">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
