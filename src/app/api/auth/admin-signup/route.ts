@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { envServer } from '@/lib/env-server'
+import type { NextFetchRequestConfig } from 'next/dist/server/web/spec-extension/fetch-event'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,25 +18,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, user: (existing as any).data.users[0], existed: true })
     }
 
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      user_metadata: { full_name },
-      email_confirm: true
-    })
+    // Call GoTrue Admin REST directly to capture full error payload
+    const url = `${envServer.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users`
+    const resp = await fetch(url as any, {
+      method: 'POST',
+      headers: {
+        'apikey': envServer.SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${envServer.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name }
+      })
+    } as RequestInit)
 
-    if (error) {
-      return NextResponse.json({
-        error: 'Admin signup failed',
-        message: error.message,
-        details: (error as any).details,
-        hint: (error as any).hint,
-        code: (error as any).code,
-        raw: error
-      }, { status: 500 })
+    const text = await resp.text()
+    let body: any
+    try { body = text ? JSON.parse(text) : {} } catch { body = { raw: text } }
+
+    if (!resp.ok) {
+      return NextResponse.json({ error: 'Admin signup failed', status: resp.status, body }, { status: 500 })
     }
 
-    return NextResponse.json({ ok: true, user: data.user })
+    return NextResponse.json({ ok: true, user: body?.user || body })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 })
   }
