@@ -1,8 +1,8 @@
 // Simple test to check Supabase connection
 const { createClient } = require('@supabase/supabase-js')
 
-const supabaseUrl = 'https://duvzewcpdxwtemzukwzg.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1dnpld2NwZHh3dGVtenVrd3pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3Mzc4ODgsImV4cCI6MjA2NTMxMzg4OH0.fuMz2rapueMHVrdEz4lxPieUoM3Mo7EKOQX5TwEioGE'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -32,6 +32,9 @@ async function testConnection() {
 }
 
 testConnection()
+
+
+
 
 
 

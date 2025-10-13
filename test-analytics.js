@@ -23,3 +23,6 @@ console.log('Supabase client:', window.supabase);
 
 
 
+
+
+

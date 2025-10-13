@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { envClient } from './env-client'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = envClient.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = envClient.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 

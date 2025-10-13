@@ -12,3 +12,6 @@ WHERE trigger_name = 'on_auth_user_created';
 SELECT routine_name, routine_type 
 FROM information_schema.routines 
 WHERE routine_name = 'handle_new_user';
+
+
+
