@@ -17,9 +17,28 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA || 'local'
+
+  const palette = [
+    '#fde68a', // amber-200
+    '#bbf7d0', // green-200
+    '#bae6fd', // sky-200
+    '#e9d5ff', // purple-200
+    '#fecdd3', // rose-200
+    '#fde1ff', // pink-ish custom
+    '#cffafe', // cyan-100
+    '#fde68a', // amber-200
+  ]
+
+  let hash = 0
+  for (let i = 0; i < commitSha.length; i++) {
+    hash = (hash * 31 + commitSha.charCodeAt(i)) >>> 0
+  }
+  const color = palette[hash % palette.length]
+
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} style={{ ['--deploy-color' as any]: color, background: color }}>
         <AuthProvider>
           <AppLayout>
             {children}
