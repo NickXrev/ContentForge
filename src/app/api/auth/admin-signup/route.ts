@@ -11,6 +11,12 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(envServer.NEXT_PUBLIC_SUPABASE_URL, envServer.SUPABASE_SERVICE_ROLE_KEY)
 
+    // If user already exists, short-circuit
+    const existing = await supabase.auth.admin.listUsers({ page: 1, perPage: 1, email })
+    if ((existing as any)?.data?.users?.length) {
+      return NextResponse.json({ ok: true, user: (existing as any).data.users[0], existed: true })
+    }
+
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -25,6 +31,7 @@ export async function POST(request: NextRequest) {
         details: (error as any).details,
         hint: (error as any).hint,
         code: (error as any).code,
+        raw: error
       }, { status: 500 })
     }
 
