@@ -34,6 +34,9 @@ export function LoginForm() {
       if (err?.message) {
         errorMessage = err.message
       }
+      if (err?.code) {
+        errorMessage += ` [${err.code}]`
+      }
       
       if (err?.status) {
         errorMessage += ` (Status: ${err.status})`
