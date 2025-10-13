@@ -11,7 +11,7 @@ export function LoginForm() {
   const [fullName, setFullName] = useState('Test User')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isSignUp, setIsSignUp] = useState(true) // Start with signup for testing
+  const [isSignUp, setIsSignUp] = useState(false) // Start with sign-in for testing
   const { signIn, signUp } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
