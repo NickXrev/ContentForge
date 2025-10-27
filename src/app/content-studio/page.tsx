@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Sparkles, Target, Users, Calendar, Save, Download, Share2, Edit3, Trash2, Clock, ChevronLeft, ChevronRight, TrendingUp, Lightbulb, Zap, ArrowRight } from 'lucide-react'
+import { FileText, Sparkles, Target, Users, Calendar, Save, Download, Share2, Edit3, Trash2, Clock, ChevronLeft, ChevronRight, TrendingUp, Lightbulb, Zap, ArrowRight, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useClientIntelligence, ClientIntelligence, TrendingTopic } from '@/hooks/useClientIntelligence'
 
@@ -39,6 +39,7 @@ export default function ContentStudioPage() {
     time: '',
     platforms: [] as string[]
   })
+  const [viewingPost, setViewingPost] = useState<{platform: string, index: number, content: string} | null>(null)
 
   const goToStep = (step: 'suggestions' | 'generating' | 'preview' | 'social') => {
     setCurrentStep(step)
@@ -254,6 +255,12 @@ Remember, success in ${topic.topic} requires patience, persistence, and continuo
       time: '12:00',
       platforms: ['twitter', 'linkedin', 'instagram']
     })
+  }
+
+  const handleViewPost = (platform: string, index: number) => {
+    if (!generatedContent) return
+    const platformContent = generatedContent.socialContent[platform as keyof typeof generatedContent.socialContent]
+    setViewingPost({ platform, index, content: platformContent[index] })
   }
 
   return (
@@ -625,10 +632,13 @@ Remember, success in ${topic.topic} requires patience, persistence, and continuo
                 </div>
                 <div className="space-y-3">
                   {generatedContent.socialContent.twitter.map((post, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm">
-                      <div className="mb-2">{post}</div>
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleViewPost('twitter', index)}>
+                      <div className="mb-2 line-clamp-2">{post}</div>
                       <button
-                        onClick={() => handleSchedulePost('twitter', index)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSchedulePost('twitter', index)
+                        }}
                         className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
                       >
                         <Clock className="w-3 h-3" />
@@ -649,10 +659,13 @@ Remember, success in ${topic.topic} requires patience, persistence, and continuo
                 </div>
                 <div className="space-y-3">
                   {generatedContent.socialContent.linkedin.map((post, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm">
-                      <div className="mb-2">{post}</div>
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleViewPost('linkedin', index)}>
+                      <div className="mb-2 line-clamp-2">{post}</div>
                       <button
-                        onClick={() => handleSchedulePost('linkedin', index)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSchedulePost('linkedin', index)
+                        }}
                         className="flex items-center space-x-1 px-3 py-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-800 transition-colors"
                       >
                         <Clock className="w-3 h-3" />
@@ -673,10 +686,13 @@ Remember, success in ${topic.topic} requires patience, persistence, and continuo
                 </div>
                 <div className="space-y-3">
                   {generatedContent.socialContent.instagram.map((post, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm">
-                      <div className="mb-2">{post}</div>
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleViewPost('instagram', index)}>
+                      <div className="mb-2 line-clamp-2">{post}</div>
                       <button
-                        onClick={() => handleSchedulePost('instagram', index)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSchedulePost('instagram', index)
+                        }}
                         className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded hover:from-purple-600 hover:to-pink-600 transition-colors"
                       >
                         <Clock className="w-3 h-3" />
@@ -776,6 +792,74 @@ Remember, success in ${topic.topic} requires patience, persistence, and continuo
               >
                 Schedule
               </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Post View Modal */}
+      {viewingPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  viewingPost.platform === 'twitter' ? 'bg-blue-500' :
+                  viewingPost.platform === 'linkedin' ? 'bg-blue-700' :
+                  'bg-gradient-to-r from-purple-500 to-pink-500'
+                }`}>
+                  <span className="text-white font-bold text-sm">
+                    {viewingPost.platform === 'twitter' ? 'T' :
+                     viewingPost.platform === 'linkedin' ? 'in' :
+                     'IG'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                    {viewingPost.platform} Post #{viewingPost.index + 1}
+                  </h3>
+                  <p className="text-sm text-gray-500">Full content preview</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingPost(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <p className="text-gray-900 whitespace-pre-wrap">{viewingPost.content}</p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                {viewingPost.content.length} characters
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setViewingPost(null)
+                    handleSchedulePost(viewingPost.platform, viewingPost.index)
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>Schedule This Post</span>
+                </button>
+                <button
+                  onClick={() => setViewingPost(null)}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
