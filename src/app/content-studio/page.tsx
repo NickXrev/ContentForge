@@ -144,19 +144,131 @@ ${topic.topic} represents a significant opportunity for ${clientData?.target_aud
 Remember, success in ${topic.topic} requires patience, persistence, and continuous learning.`,
       socialContent: {
         twitter: [
-          `🚀 Just discovered the key to ${topic.topic}! Here's what every ${clientData?.target_audience || 'professional'} needs to know...`,
-          `💡 Pro tip: The secret to successful ${topic.topic} isn't what you think. It's all about...`,
-          `📈 Want to master ${topic.topic}? Here are 5 strategies that actually work:`
+          `🚀 Just discovered the key to ${topic.topic}! 
+
+Here's what every ${clientData?.target_audience || 'professional'} needs to know:
+
+• Start with clear goals
+• Measure everything
+• Test and iterate often
+
+The landscape is changing fast. Are you keeping up?
+
+#${topic.topic.replace(/\s+/g, '')} #BusinessTips #Growth`,
+          `💡 Want to master ${topic.topic}?
+
+The secret isn't what you think.
+
+It's all about:
+→ Understanding your audience
+→ Creating real value
+→ Consistency over perfection
+
+Stop waiting for the "perfect" strategy. Start now with what you have.
+
+#${topic.topic.replace(/\s+/g, '')} #Marketing`,
+          `📈 The biggest mistake I see in ${topic.topic}?
+
+Trying to do everything at once.
+
+Focus on these 3 things:
+
+1. Build a strong foundation
+2. Automate what you can
+3. Track what matters
+
+Quality > quantity always.
+
+What's your #1 priority this week?
+
+#${topic.topic.replace(/\s+/g, '')} #Productivity`
         ],
         linkedin: [
-          `The landscape of ${topic.topic} is evolving rapidly in ${clientData?.industry || 'our industry'}. Here's what industry leaders are doing differently...`,
-          `After analyzing 100+ successful ${topic.topic} implementations, I've identified the common patterns that drive results.`,
-          `The future of ${topic.topic} depends on these three critical factors...`
+          `The landscape of ${topic.topic} is evolving rapidly in ${clientData?.industry || 'our industry'}. Here's what industry leaders are doing differently:
+
+🔄 They're focusing on long-term value over quick wins
+📊 They're data-driven but human-centered
+🤝 They're building authentic relationships
+
+The truth? Most companies are still stuck in outdated approaches.
+
+The future belongs to those who adapt.
+
+What's your take on this?
+
+#ProfessionalDevelopment #IndustryInsights`,
+          `After analyzing 100+ successful ${topic.topic} implementations, I've identified the common patterns that drive results:
+
+✅ Clear strategy and measurable KPIs
+✅ Strong leadership buy-in
+✅ Cross-functional collaboration
+✅ Continuous learning and optimization
+✅ Focus on customer impact, not vanity metrics
+
+The most successful teams don't have more resources. They have better systems.
+
+What patterns have you noticed?
+
+#BusinessStrategy #Leadership`,
+          `The future of ${topic.topic} depends on these three critical factors:
+
+1️⃣ **Adaptability** - The willingness to pivot when data shows a better path
+
+2️⃣ **Integration** - Seamlessly connecting with existing systems and processes
+
+3️⃣ **People** - Never forgetting that at the end of every strategy are real people
+
+Too often we focus on the tech and forget the humans.
+
+The most sophisticated tools fail if they don't serve people.
+
+Thoughts?
+
+#FutureOfWork #Innovation`
         ],
         instagram: [
-          `✨ The ${topic.topic} transformation you've been waiting for! Swipe to see the complete guide 👆`,
-          `🎯 Ready to level up your ${topic.topic} game? Here's everything you need to know!`,
-          `💫 From beginner to expert: Your complete ${topic.topic} roadmap starts here!`
+          `✨ The ${topic.topic} transformation you've been waiting for! 
+
+Swipe to see the complete guide 👆
+
+Here's what makes this different:
+• Step-by-step roadmap
+• Real-world examples
+• Actionable strategies
+
+Ready to level up?
+
+Save this post and share your #1 takeaway below 👇
+
+#${topic.topic.replace(/\s+/g, '')} #BusinessGrowth #Tips`,
+          `🎯 Ready to level up your ${topic.topic} game?
+
+Here's everything you need to know:
+
+💡 Start with the basics
+📊 Track what matters
+🚀 Scale what works
+
+The best time to start? Right now.
+
+Drop a 💬 if you want more content like this!
+
+#${topic.topic.replace(/\s+/g, '')} #Entrepreneurship #Growth`,
+          `💫 From beginner to expert: Your complete ${topic.topic} roadmap starts here!
+
+Here's your journey:
+
+✨ Foundation - Learn the fundamentals
+📈 Growth - Apply what you've learned
+🚀 Mastery - Teach others and refine
+
+Every expert was once a beginner.
+
+What step are you on?
+
+Tag someone who needs to see this! ⬇️
+
+#${topic.topic.replace(/\s+/g, '')} #PersonalGrowth #Success`
         ]
       },
       createdAt: new Date().toISOString(),
