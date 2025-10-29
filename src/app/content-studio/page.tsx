@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Sparkles, Target, Users, Calendar, Save, Download, Share2, Edit3, Trash2, Clock, ChevronLeft, ChevronRight, TrendingUp, Lightbulb, Zap, ArrowRight, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import CollaborativeEditor from '@/components/editor/CollaborativeEditor'
 import { useClientIntelligence, ClientIntelligence, TrendingTopic } from '@/hooks/useClientIntelligence'
 
 interface ContentPiece {
@@ -40,6 +41,7 @@ export default function ContentStudioPage() {
     platforms: [] as string[]
   })
   const [viewingPost, setViewingPost] = useState<{platform: string, index: number, content: string} | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   const goToStep = (step: 'suggestions' | 'generating' | 'preview' | 'social') => {
     setCurrentStep(step)
@@ -690,9 +692,12 @@ Tag someone who needs to see this! ⬇️
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">{generatedContent.title}</h2>
                 <div className="flex items-center space-x-3">
-                  <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                  <button
+                    onClick={() => setIsEditing(prev => !prev)}
+                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
                     <Edit3 className="w-4 h-4" />
-                    <span>Edit</span>
+                    <span>{isEditing ? 'Done' : 'Edit'}</span>
                   </button>
                   <button
                     onClick={handleGenerateSocial}
@@ -704,9 +709,24 @@ Tag someone who needs to see this! ⬇️
                 </div>
               </div>
 
-              <div className="prose max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: generatedContent.longFormContent.replace(/\n/g, '<br>') }} />
-              </div>
+              {isEditing ? (
+                <CollaborativeEditor
+                  documentId={generatedContent.id}
+                  teamId={''}
+                  userId={''}
+                  userName={'You'}
+                  currentDocument={{ content: generatedContent.longFormContent }}
+                  readOnly={false}
+                  platform="blog"
+                  onSave={(content) => {
+                    setGeneratedContent(prev => prev ? { ...prev, longFormContent: content, updatedAt: new Date().toISOString() } : prev)
+                  }}
+                />
+              ) : (
+                <div className="prose max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: generatedContent.longFormContent.replace(/\n/g, '<br>') }} />
+                </div>
+              )}
             </div>
           </motion.div>
         )}

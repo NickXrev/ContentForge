@@ -13,3 +13,5 @@ export function assertServerEnv() {
   if (!envServer.NEXT_PUBLIC_APP_URL) missing.push('NEXT_PUBLIC_APP_URL')
   return { missing }
 }
+
+

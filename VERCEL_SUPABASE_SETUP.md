@@ -27,3 +27,5 @@
 6) Security checks
 - Ensure `SUPABASE_SERVICE_ROLE_KEY` is only referenced in server files, like API routes or server utilities (`src/lib/supabase-server.ts`).
 - Do not use the service key in client components. Client should import `src/lib/supabase.ts` which uses the anon key.
+
+

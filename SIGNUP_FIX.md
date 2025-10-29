@@ -115,3 +115,5 @@ After fixing the signup issue:
 The fix ensures that user signup works properly while maintaining security through appropriate RLS policies.
 
 
+
+

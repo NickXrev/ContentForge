@@ -37,3 +37,5 @@ export async function GET(_req: NextRequest) {
 
   return NextResponse.json({ summary, supabaseOk, supabaseError })
 }
+
+

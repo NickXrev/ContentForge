@@ -13,3 +13,5 @@ Set these in your local `.env` and in Vercel Project Settings → Environment Va
 Notes
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` on the client. Set it only in server environments (Vercel env vars) and reference it in server code only.
 - `NEXT_PUBLIC_*` variables are exposed to the browser; do not put secrets there.
+
+
