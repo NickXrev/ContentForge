@@ -21,7 +21,8 @@ import {
   Target,
   Edit3,
   CheckSquare,
-  Sparkles
+  Sparkles,
+  Image
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -96,6 +97,12 @@ const menuItems: MenuItem[] = [
       },
       // Removed Campaigns
     ]
+  },
+  {
+    id: 'gallery',
+    label: 'Gallery',
+    icon: Image,
+    href: '/gallery'
   },
   {
     id: 'analytics',
