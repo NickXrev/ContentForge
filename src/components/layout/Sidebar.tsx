@@ -63,24 +63,14 @@ const menuItems: MenuItem[] = [
       },
       {
         id: 'editor',
-        label: 'Collaborative Editor',
+        label: 'Editor',
         icon: Edit3,
         href: '/editor'
       }
     ]
   },
-  {
-    id: 'inbox',
-    label: 'Inbox',
-    icon: Inbox,
-    href: '/inbox'
-  },
-  {
-    id: 'todos',
-    label: 'Todos & Tasks',
-    icon: CheckSquare,
-    href: '/todos'
-  },
+  // Removed Inbox
+  // Removed Todos & Tasks
   {
     id: 'publishing',
     label: 'Publishing',
@@ -94,7 +84,7 @@ const menuItems: MenuItem[] = [
       },
       {
         id: 'drafts',
-        label: 'Drafts',
+        label: 'Content',
         icon: FileText,
         href: '/publishing/drafts'
       },
@@ -104,12 +94,7 @@ const menuItems: MenuItem[] = [
         icon: Calendar,
         href: '/publishing/scheduled'
       },
-      {
-        id: 'campaigns',
-        label: 'Campaigns',
-        icon: Target,
-        href: '/publishing/campaigns'
-      }
+      // Removed Campaigns
     ]
   },
   {
@@ -118,12 +103,7 @@ const menuItems: MenuItem[] = [
     icon: BarChart3,
     href: '/analytics'
   },
-  {
-    id: 'team',
-    label: 'Team',
-    icon: Users,
-    href: '/team'
-  },
+  // Removed Team
   {
     id: 'accounts',
     label: 'Accounts & Settings',
