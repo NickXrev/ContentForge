@@ -191,6 +191,55 @@ export function useClientIntelligence() {
             keywords: ['customer experience', 'CX', 'customer satisfaction', 'service excellence'],
             content_angle: 'Innovative approaches to delivering exceptional customer experiences',
             target_audience: 'Customer service and marketing teams'
+          },
+          {
+            topic: 'Generative AI for Content Marketing',
+            trending_score: 93,
+            keywords: ['genai', 'content ops', 'content at scale', 'prompt engineering'],
+            content_angle: 'Practical ways to integrate GenAI into your content workflow',
+            target_audience: 'Content and growth teams'
+          },
+          {
+            topic: 'Privacy-First Analytics',
+            trending_score: 84,
+            keywords: ['GDPR', 'cookieless', 'first-party data', 'measurement'],
+            content_angle: 'Measuring performance in a cookieless world',
+            target_audience: 'Marketing leaders and analysts'
+          },
+          {
+            topic: 'Video Content Strategy 2025',
+            trending_score: 88,
+            keywords: ['short-form', 'YouTube', 'editing', 'distribution'],
+            content_angle: 'From short-form to long-form: a full-funnel video plan',
+            target_audience: 'Creators and brand teams'
+          },
+          {
+            topic: 'Community-Led Growth',
+            trending_score: 82,
+            keywords: ['community', 'advocacy', 'retention', 'word of mouth'],
+            content_angle: 'Turning users into advocates with community programs',
+            target_audience: 'Product marketing and success teams'
+          },
+          {
+            topic: 'No-Code Automation Playbooks',
+            trending_score: 80,
+            keywords: ['zapier', 'make', 'workflows', 'ops efficiency'],
+            content_angle: 'Ship more with no-code automations across GTM',
+            target_audience: 'Ops and marketing teams'
+          },
+          {
+            topic: 'Email Deliverability Best Practices',
+            trending_score: 79,
+            keywords: ['DMARC', 'SPF', 'DKIM', 'inbox placement'],
+            content_angle: 'Keeping your campaigns out of the spam folder',
+            target_audience: 'Lifecycle and CRM marketers'
+          },
+          {
+            topic: 'Modern SEO in 2025',
+            trending_score: 90,
+            keywords: ['search intent', 'EEAT', 'programmatic SEO', 'SERP features'],
+            content_angle: 'What actually moves rankings post-HCU',
+            target_audience: 'Growth and SEO teams'
           }
         ]))
       } else {
