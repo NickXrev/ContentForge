@@ -28,7 +28,7 @@ interface ResearchData {
 
 export default function ResearchTool() {
   const [url, setUrl] = useState('')
-  const [companyName, setCompanyName] = useState('')
+  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [researchData, setResearchData] = useState<ResearchData[]>([])
   const [error, setError] = useState('')
@@ -138,8 +138,8 @@ export default function ResearchTool() {
   }
 
   const handleAnalyze = async () => {
-    if (!url.trim() || !companyName.trim()) {
-      setError('Please enter both company name and website URL')
+    if (!query.trim() && !url.trim()) {
+      setError('Enter a research query (topic/company) or a website URL')
       return
     }
 
@@ -159,8 +159,8 @@ export default function ResearchTool() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyName: companyName.trim(),
-          website: url.trim(),
+          companyName: query.trim(),
+          website: url.trim() || null,
           teamId: selectedTeamId
         })
       })
@@ -172,8 +172,8 @@ export default function ResearchTool() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            companyName: companyName.trim(),
-            website: url.trim(),
+            companyName: query.trim(),
+            website: url.trim() || null,
             teamId: selectedTeamId,
             clientProfileId: null
           })
@@ -189,7 +189,7 @@ export default function ResearchTool() {
       
       setSuccess(`Research completed using ${result.researchType || 'AI'}! Comprehensive analysis ready.`)
       setUrl('')
-      setCompanyName('')
+      setQuery('')
       
       // Reload research data
       setTimeout(() => {
@@ -257,25 +257,25 @@ export default function ResearchTool() {
 
       {/* Research Form */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Research New Company</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Run Research</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name
+              Research query (topic, company, competitor, keyword)
             </label>
             <input
               type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Enter company name"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g., AI for content marketing, Acme Inc, SEO automation"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
             />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Website URL
+              Website URL (optional)
             </label>
             <input
               type="url"
@@ -289,18 +289,18 @@ export default function ResearchTool() {
 
         <Button
           onClick={handleAnalyze}
-          disabled={loading || !url.trim() || !companyName.trim()}
+          disabled={loading || (!query.trim() && !url.trim())}
           className="w-full md:w-auto"
         >
           {loading ? (
             <>
               <Loader className="w-4 h-4 mr-2 animate-spin" />
-              Deep Research in Progress...
+              Research in Progress...
             </>
           ) : (
             <>
               <Search className="w-4 h-4 mr-2" />
-              Research Company
+              Run Research
             </>
           )}
         </Button>
