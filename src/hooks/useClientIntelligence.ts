@@ -144,10 +144,19 @@ export function useClientIntelligence() {
           limit_count: 5
         })
 
+      const dedupe = (items: TrendingTopic[]): TrendingTopic[] => {
+        const map = new Map<string, TrendingTopic>()
+        for (const item of items) {
+          const key = item.topic.trim().toLowerCase()
+          if (!map.has(key)) map.set(key, item)
+        }
+        return Array.from(map.values())
+      }
+
       if (topicsError) {
         console.warn('Could not fetch trending topics:', topicsError)
         // Fallback to mock data - Updated for Q4 2025
-        setTrendingTopics([
+        setTrendingTopics(dedupe([
           {
             topic: 'AI-Powered Business Automation',
             trending_score: 98,
@@ -183,9 +192,9 @@ export function useClientIntelligence() {
             content_angle: 'Innovative approaches to delivering exceptional customer experiences',
             target_audience: 'Customer service and marketing teams'
           }
-        ])
+        ]))
       } else {
-        setTrendingTopics(topicsData || [])
+        setTrendingTopics(dedupe((topicsData as TrendingTopic[]) || []))
       }
     } catch (err) {
       console.error('Error fetching client intelligence:', err)
