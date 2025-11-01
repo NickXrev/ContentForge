@@ -36,12 +36,15 @@ export default function AIPage() {
 
       if (teams?.[0]?.id) {
         // Get client profile for the team
-        const { data: profile } = await supabase
+        // If multiple exist, get the most recent one
+        const { data: profiles } = await supabase
           .from('client_profiles')
           .select('*')
           .eq('team_id', teams[0].id)
-          .single()
+          .order('created_at', { ascending: false })
+          .limit(1)
 
+        const profile = profiles && profiles.length > 0 ? profiles[0] : null
         setClientProfile(profile)
       }
     } catch (error) {

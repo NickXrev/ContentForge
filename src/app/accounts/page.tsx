@@ -107,11 +107,15 @@ export default function AccountsPage() {
       setAccounts(accountsData || [])
 
       // Fetch client profile
-      const { data: profileData, error: profileError } = await supabase
+      // If multiple exist, get the most recent one
+      const { data: profilesData, error: profileError } = await supabase
         .from('client_profiles')
         .select('*')
         .eq('team_id', teamId)
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+      
+      const profileData = profilesData && profilesData.length > 0 ? profilesData[0] : null
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching client profile:', profileError)

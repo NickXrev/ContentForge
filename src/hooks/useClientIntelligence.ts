@@ -100,11 +100,15 @@ export function useClientIntelligence() {
       }
 
       // Try to get client profile from database using team_id
-      const { data: profileData, error: profileError } = await supabase
+      // If multiple exist, get the most recent one
+      const { data: profilesData, error: profileError } = await supabase
         .from('client_profiles')
         .select('*')
         .eq('team_id', teamId)
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+      
+      const profileData = profilesData && profilesData.length > 0 ? profilesData[0] : null
 
       if (profileError || !profileData) {
         // No profile found - show setup prompts

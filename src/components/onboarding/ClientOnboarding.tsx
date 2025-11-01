@@ -274,18 +274,80 @@ export default function ClientOnboarding() {
         teamData = existingTeam
       }
 
-      // Save client profile to database
-      const { error } = await supabase
+      // Check if client profile already exists for this team
+      // If multiple exist, get the most recent one
+      const { data: existingProfiles, error: checkError } = await supabase
         .from('client_profiles')
-        .insert({
-          team_id: teamData.id,
-          name: formData.companyName,
-          industry: formData.industry,
-          target_audience: formData.targetAudience,
-          brand_voice: formData.brandTone,
-          competitors: formData.competitorAnalysis ? [formData.competitorAnalysis] : [],
-          goals: formData.contentGoals
-        })
+        .select('id')
+        .eq('team_id', teamData.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      
+      const existingProfile = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0] : null
+
+      let error
+      
+      if (existingProfile) {
+        // Update existing profile
+        const { error: updateError } = await supabase
+          .from('client_profiles')
+          .update({
+            name: formData.companyName,
+            company_name: formData.companyName, // Support both field names
+            industry: formData.industry,
+            business_type: formData.businessType,
+            company_size: formData.companySize,
+            website: formData.website,
+            target_audience: formData.targetAudience,
+            audience_pain_points: formData.audiencePainPoints,
+            audience_goals: formData.audienceGoals,
+            brand_voice: formData.brandTone,
+            brand_tone: formData.brandTone, // Support both field names
+            content_goals: formData.contentGoals,
+            goals: formData.contentGoals, // Support both field names
+            key_services: formData.keyServices,
+            unique_value_prop: formData.uniqueValueProp,
+            seo_keywords: formData.seoKeywords,
+            competitor_analysis: formData.competitorAnalysis ? { notes: formData.competitorAnalysis } : {},
+            competitors: formData.competitorAnalysis ? [formData.competitorAnalysis] : [],
+            content_preferences: formData.contentPreferences,
+            auth_id: user.id,
+            user_id: userData.id
+          })
+          .eq('id', existingProfile.id)
+        
+        error = updateError
+      } else {
+        // Insert new profile
+        const { error: insertError } = await supabase
+          .from('client_profiles')
+          .insert({
+            team_id: teamData.id,
+            auth_id: user.id,
+            user_id: userData.id,
+            name: formData.companyName,
+            company_name: formData.companyName, // Support both field names
+            industry: formData.industry,
+            business_type: formData.businessType,
+            company_size: formData.companySize,
+            website: formData.website,
+            target_audience: formData.targetAudience,
+            audience_pain_points: formData.audiencePainPoints,
+            audience_goals: formData.audienceGoals,
+            brand_voice: formData.brandTone,
+            brand_tone: formData.brandTone, // Support both field names
+            content_goals: formData.contentGoals,
+            goals: formData.contentGoals, // Support both field names
+            key_services: formData.keyServices,
+            unique_value_prop: formData.uniqueValueProp,
+            seo_keywords: formData.seoKeywords,
+            competitor_analysis: formData.competitorAnalysis ? { notes: formData.competitorAnalysis } : {},
+            competitors: formData.competitorAnalysis ? [formData.competitorAnalysis] : [],
+            content_preferences: formData.contentPreferences
+          })
+        
+        error = insertError
+      }
 
       if (error) {
         console.error('Database error details:', {

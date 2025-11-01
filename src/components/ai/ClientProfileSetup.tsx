@@ -102,14 +102,47 @@ export function ClientProfileSetup({ onComplete }: ClientProfileSetupProps) {
         }
 
       if (teamId) {
-        const { data: clientProfile, error: profileError } = await supabase
+        // Check if client profile already exists for this team
+        const { data: existingProfiles } = await supabase
           .from('client_profiles')
-          .insert({
-            team_id: teamId,
-            ...profile
-          })
-          .select()
-          .single()
+          .select('id')
+          .eq('team_id', teamId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+        
+        const existingProfile = existingProfiles && existingProfiles.length > 0 ? existingProfiles[0] : null
+        
+        let clientProfile
+        let profileError
+        
+        if (existingProfile) {
+          // Update existing profile
+          const { data, error } = await supabase
+            .from('client_profiles')
+            .update({
+              ...profile,
+              team_id: teamId
+            })
+            .eq('id', existingProfile.id)
+            .select()
+            .single()
+          
+          clientProfile = data
+          profileError = error
+        } else {
+          // Insert new profile
+          const { data, error } = await supabase
+            .from('client_profiles')
+            .insert({
+              team_id: teamId,
+              ...profile
+            })
+            .select()
+            .single()
+          
+          clientProfile = data
+          profileError = error
+        }
 
         if (profileError) {
           setError(`Error saving profile: ${profileError.message}`)
