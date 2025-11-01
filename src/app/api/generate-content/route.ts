@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { openRouter } from '@/lib/openrouter'
 
-function createContentPrompt(topic: string, platform: string, tone: string, clientProfile: any): string {
+function createContentPrompt(topic: string, platform: string, tone: string, clientProfile: any, longFormContent?: string): string {
   const { name, industry, target_audience, brand_voice, competitors, goals } = clientProfile || {}
   
   let prompt = `Create ${platform} content about: ${topic}\n\n`
+  
+  // If long-form content is provided, use it as context for social posts
+  if (longFormContent && platform !== 'blog') {
+    prompt += `Based on this long-form content, create a ${platform} post that captures the key message:\n\n${longFormContent.substring(0, 2000)}\n\n`
+  }
   
   if (name) prompt += `Client: ${name}\n`
   if (industry) prompt += `Industry: ${industry}\n`
@@ -16,8 +21,8 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
   prompt += `\nTone: ${tone}\n`
   prompt += `Platform: ${platform}\n\n`
   
-  if (platform === 'twitter') {
-    prompt += 'Create a Twitter post (max 280 characters) that is engaging and includes relevant hashtags.'
+  if (platform === 'twitter' || platform === 'x') {
+    prompt += 'Create a Twitter/X post (max 280 characters) that is engaging and includes relevant hashtags.'
   } else if (platform === 'linkedin') {
     prompt += 'Create a LinkedIn post that is professional and thought-provoking, suitable for B2B audience.'
   } else if (platform === 'instagram') {
@@ -25,7 +30,7 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
   } else if (platform === 'facebook') {
     prompt += 'Create a Facebook post that encourages engagement and community interaction.'
   } else if (platform === 'blog') {
-    prompt += 'Create a comprehensive blog post with a compelling headline and well-structured content.'
+    prompt += 'Create a comprehensive, long-form blog post (minimum 2000 words) with:\n- A compelling headline\n- Well-structured sections with H2 and H3 headings\n- Detailed explanations and examples\n- Actionable insights\n- Conclusion\n- Clear formatting with markdown (use # for H1, ## for H2, ### for H3, ** for bold, - for lists)\nMake it in-depth and valuable content that provides real value to readers.'
   } else {
     prompt += `Create ${platform} content that is engaging and appropriate for the platform.`
   }
@@ -35,7 +40,7 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
 
 export async function POST(request: NextRequest) {
   try {
-    const { topic, platform, tone, clientProfile } = await request.json()
+    const { topic, platform, tone, clientProfile, longFormContent } = await request.json()
 
     if (!topic?.trim()) {
       return NextResponse.json(
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
     console.log('OpenRouter API key found, length:', process.env.OPENROUTER_API_KEY.length)
 
     // Create the prompt based on the parameters
-    const prompt = createContentPrompt(topic, platform, tone, clientProfile)
+    const prompt = createContentPrompt(topic, platform, tone, clientProfile, longFormContent)
     
         // Get AI model from admin config
         const { createClient } = await import('@supabase/supabase-js')
@@ -89,7 +94,9 @@ export async function POST(request: NextRequest) {
           .single()
 
         const model = aiModelConfig?.value || 'openai/gpt-4o-mini'
-        const maxTokens = parseInt(maxTokensConfig?.value || '1000')
+        // Use higher token limit for blog posts
+        const defaultMaxTokens = platform === 'blog' ? '4000' : '1000'
+        const maxTokens = parseInt(maxTokensConfig?.value || defaultMaxTokens)
         const temperature = parseFloat(temperatureConfig?.value || '0.7')
         const systemPrompt = systemPromptConfig?.value || 'You are a professional content creator who generates high-quality, engaging content for various social media platforms and blogs.'
 

@@ -2,10 +2,15 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Sparkles, Target, Users, Calendar, Save, Download, Share2, Edit3, Trash2, Clock, ChevronLeft, ChevronRight, TrendingUp, Lightbulb, Zap, ArrowRight, X } from 'lucide-react'
+import { FileText, Sparkles, Target, Users, Calendar, Save, Download, Share2, Edit3, Trash2, Clock, ChevronLeft, ChevronRight, TrendingUp, Lightbulb, Zap, ArrowRight, X, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import CollaborativeEditor from '@/components/editor/CollaborativeEditor'
 import { useClientIntelligence, ClientIntelligence, TrendingTopic } from '@/hooks/useClientIntelligence'
+
+interface SocialPost {
+  content: string
+  imageUrl?: string
+}
 
 interface ContentPiece {
   id: string
@@ -17,9 +22,9 @@ interface ContentPiece {
   keywords: string[]
   longFormContent: string
   socialContent: {
-    twitter: string[]
-    linkedin: string[]
-    instagram: string[]
+    twitter: SocialPost[]
+    linkedin: SocialPost[]
+    instagram: SocialPost[]
   }
   createdAt: string
   updatedAt: string
@@ -42,6 +47,7 @@ export default function ContentStudioPage() {
   })
   const [viewingPost, setViewingPost] = useState<{platform: string, index: number, content: string} | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [generatingImage, setGeneratingImage] = useState<{platform: string, index: number} | null>(null)
 
   const goToStep = (step: 'suggestions' | 'generating' | 'preview' | 'social') => {
     setCurrentStep(step)
@@ -108,60 +114,13 @@ export default function ContentStudioPage() {
 
       const { content: longFormContent } = await response.json()
     
-      // Generate social media posts using AI
-      const socialPromises = ['twitter', 'linkedin', 'instagram'].map(async (platform) => {
-        try {
-          const socialResponse = await fetch('/api/generate-content', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              topic: topic.topic,
-              platform: platform,
-              tone: clientData?.brand_tone || 'professional',
-              clientProfile: {
-                name: clientData?.company_name,
-                industry: clientData?.industry,
-                target_audience: clientData?.target_audience,
-                brand_voice: clientData?.brand_tone,
-                competitors: [],
-                goals: clientData?.content_goals || []
-              }
-            })
-          })
-
-          if (socialResponse.ok) {
-            const { content } = await socialResponse.json()
-            return { platform, content }
-          }
-          return { platform, content: '' }
-        } catch (err) {
-          console.error(`Error generating ${platform} content:`, err)
-          return { platform, content: '' }
-        }
-      })
-
-      // Generate multiple posts per platform (3 each)
-      const allSocialPromises: Promise<{platform: string, content: string}>[] = []
-      for (let i = 0; i < 3; i++) {
-        allSocialPromises.push(...socialPromises)
-      }
-      
-      const socialResults = await Promise.all(allSocialPromises)
-      
-      // Group by platform
-      const socialContent: { twitter: string[], linkedin: string[], instagram: string[] } = {
+      // Don't generate social posts here - wait until user clicks "Generate Social Posts"
+      // Initialize with empty social content arrays
+      const socialContent: { twitter: SocialPost[], linkedin: SocialPost[], instagram: SocialPost[] } = {
         twitter: [],
         linkedin: [],
         instagram: []
       }
-
-      socialResults.forEach(result => {
-        if (result.content && result.platform in socialContent) {
-          socialContent[result.platform as keyof typeof socialContent].push(result.content)
-        }
-      })
 
       // Extract title from content (first line or H1)
       const titleMatch = longFormContent.match(/^#\s*(.+)$/m) || longFormContent.match(/^(.+)$/m)
@@ -262,8 +221,89 @@ export default function ContentStudioPage() {
     }
   }
 
-  const handleGenerateSocial = () => {
-    goToStep('social')
+  const handleGenerateSocial = async () => {
+    if (!generatedContent) return
+    
+    setIsGenerating(true)
+    
+    try {
+      // Generate social media posts based on the current (potentially edited) long-form content
+      // Extract key points from the long-form content to use as context
+      const contentSummary = generatedContent.longFormContent.substring(0, 500) // Use first 500 chars as summary
+      
+      const socialPromises = ['twitter', 'linkedin', 'instagram'].map(async (platform) => {
+        try {
+          const socialResponse = await fetch('/api/generate-content', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              topic: generatedContent.topic,
+              platform: platform,
+              tone: clientData?.brand_tone || 'professional',
+              longFormContent: generatedContent.longFormContent, // Pass full content for context
+              clientProfile: {
+                name: clientData?.company_name,
+                industry: clientData?.industry,
+                target_audience: clientData?.target_audience,
+                brand_voice: clientData?.brand_tone,
+                competitors: [],
+                goals: clientData?.content_goals || []
+              }
+            })
+          })
+
+          if (socialResponse.ok) {
+            const { content } = await socialResponse.json()
+            return { platform, content }
+          }
+          console.error(`Failed to generate ${platform} content:`, socialResponse.status)
+          return { platform, content: '' }
+        } catch (err) {
+          console.error(`Error generating ${platform} content:`, err)
+          return { platform, content: '' }
+        }
+      })
+
+      // Generate multiple posts per platform (3 each)
+      const allSocialPromises: Promise<{platform: string, content: string}>[] = []
+      for (let i = 0; i < 3; i++) {
+        allSocialPromises.push(...socialPromises)
+      }
+      
+      const socialResults = await Promise.all(allSocialPromises)
+      
+      // Group by platform and filter out empty results
+      const socialContent: { twitter: SocialPost[], linkedin: SocialPost[], instagram: SocialPost[] } = {
+        twitter: [],
+        linkedin: [],
+        instagram: []
+      }
+
+      socialResults.forEach(result => {
+        if (result.content && result.content.trim() && result.platform in socialContent) {
+          socialContent[result.platform as keyof typeof socialContent].push({
+            content: result.content.trim(),
+            imageUrl: undefined
+          })
+        }
+      })
+
+      // Update generated content with new social posts
+      setGeneratedContent(prev => prev ? {
+        ...prev,
+        socialContent: socialContent,
+        updatedAt: new Date().toISOString()
+      } : null)
+      
+      goToStep('social')
+    } catch (error) {
+      console.error('Error generating social content:', error)
+      alert(`Error generating social posts: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleSchedulePost = (platform: string, index: number) => {
@@ -281,7 +321,10 @@ export default function ContentStudioPage() {
     if (!generatedContent || !schedulingPost) return
 
     try {
-      const postContent = generatedContent.socialContent[schedulingPost.platform as keyof typeof generatedContent.socialContent][schedulingPost.index]
+      const platformContent = generatedContent.socialContent[schedulingPost.platform as keyof typeof generatedContent.socialContent]
+      const post = platformContent[schedulingPost.index]
+      const postContent = typeof post === 'string' ? post : post.content
+      const postImageUrl = typeof post === 'object' ? post.imageUrl : undefined
       const scheduledDateTime = new Date(`${scheduleData.date}T${scheduleData.time}`).toISOString()
 
       // Get current user
@@ -313,7 +356,8 @@ export default function ContentStudioPage() {
           status: 'scheduled',
           metadata: {
             scheduled_at: scheduledDateTime,
-            original_content_id: generatedContent.id
+            original_content_id: generatedContent.id,
+            image_url: postImageUrl // Include image URL in metadata for posting
           }
         }])
         .select()
@@ -346,7 +390,67 @@ export default function ContentStudioPage() {
   const handleViewPost = (platform: string, index: number) => {
     if (!generatedContent) return
     const platformContent = generatedContent.socialContent[platform as keyof typeof generatedContent.socialContent]
-    setViewingPost({ platform, index, content: platformContent[index] })
+    const post = platformContent[index]
+    setViewingPost({ platform, index, content: typeof post === 'string' ? post : post.content })
+  }
+
+  const handleGenerateImage = async (platform: string, index: number) => {
+    if (!generatedContent) return
+    
+    setGeneratingImage({ platform, index })
+    
+    try {
+      const platformContent = generatedContent.socialContent[platform as keyof typeof generatedContent.socialContent]
+      const post = platformContent[index]
+      const postContent = typeof post === 'string' ? post : post.content
+      
+      // Create image prompt from the post content
+      const imagePrompt = `${postContent.substring(0, 500)}. Visual style: professional, engaging, suitable for ${platform}.`
+      
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: imagePrompt,
+          platform: platform
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate image')
+      }
+
+      const { imageUrl } = await response.json()
+      
+      // Update the post with the image URL
+      setGeneratedContent(prev => {
+        if (!prev) return null
+        
+        const updatedSocialContent = { ...prev.socialContent }
+        const platformPosts = [...updatedSocialContent[platform as keyof typeof updatedSocialContent]]
+        const currentPost = platformPosts[index]
+        platformPosts[index] = {
+          content: typeof currentPost === 'string' ? currentPost : currentPost.content,
+          imageUrl: imageUrl
+        }
+        
+        updatedSocialContent[platform as keyof typeof updatedSocialContent] = platformPosts as any
+        
+        return {
+          ...prev,
+          socialContent: updatedSocialContent,
+          updatedAt: new Date().toISOString()
+        }
+      })
+    } catch (error) {
+      console.error('Error generating image:', error)
+      alert(`Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setGeneratingImage(null)
+    }
   }
 
   return (
@@ -757,21 +861,41 @@ export default function ContentStudioPage() {
                   <h3 className="font-semibold text-gray-900">Twitter</h3>
                 </div>
                 <div className="space-y-3">
-                  {generatedContent.socialContent.twitter.map((post, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleViewPost('twitter', index)}>
-                      <div className="mb-2 line-clamp-2">{post}</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleSchedulePost('twitter', index)
-                        }}
-                        className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span>Schedule</span>
-                      </button>
-                    </div>
-                  ))}
+                  {generatedContent.socialContent.twitter.map((post, index) => {
+                    const postContent = typeof post === 'string' ? post : post.content
+                    const postImage = typeof post === 'object' ? post.imageUrl : undefined
+                    const isGeneratingImg = generatingImage?.platform === 'twitter' && generatingImage?.index === index
+                    return (
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors">
+                        {postImage && (
+                          <img src={postImage} alt="Post image" className="w-full h-32 object-cover rounded mb-2" />
+                        )}
+                        <div className="mb-2 line-clamp-2" onClick={() => handleViewPost('twitter', index)}>{postContent}</div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleGenerateImage('twitter', index)
+                            }}
+                            disabled={isGeneratingImg}
+                            className="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                          >
+                            {isGeneratingImg ? 'Generating...' : 'Generate Image'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSchedulePost('twitter', index)
+                            }}
+                            className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span>Schedule</span>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -784,21 +908,41 @@ export default function ContentStudioPage() {
                   <h3 className="font-semibold text-gray-900">LinkedIn</h3>
                 </div>
                 <div className="space-y-3">
-                  {generatedContent.socialContent.linkedin.map((post, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleViewPost('linkedin', index)}>
-                      <div className="mb-2 line-clamp-2">{post}</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleSchedulePost('linkedin', index)
-                        }}
-                        className="flex items-center space-x-1 px-3 py-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-800 transition-colors"
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span>Schedule</span>
-                      </button>
-                    </div>
-                  ))}
+                  {generatedContent.socialContent.linkedin.map((post, index) => {
+                    const postContent = typeof post === 'string' ? post : post.content
+                    const postImage = typeof post === 'object' ? post.imageUrl : undefined
+                    const isGeneratingImg = generatingImage?.platform === 'linkedin' && generatingImage?.index === index
+                    return (
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors">
+                        {postImage && (
+                          <img src={postImage} alt="Post image" className="w-full h-32 object-cover rounded mb-2" />
+                        )}
+                        <div className="mb-2 line-clamp-2" onClick={() => handleViewPost('linkedin', index)}>{postContent}</div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleGenerateImage('linkedin', index)
+                            }}
+                            disabled={isGeneratingImg}
+                            className="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                          >
+                            {isGeneratingImg ? 'Generating...' : 'Generate Image'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSchedulePost('linkedin', index)
+                            }}
+                            className="flex items-center space-x-1 px-3 py-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-800 transition-colors"
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span>Schedule</span>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -811,21 +955,41 @@ export default function ContentStudioPage() {
                   <h3 className="font-semibold text-gray-900">Instagram</h3>
                 </div>
                 <div className="space-y-3">
-                  {generatedContent.socialContent.instagram.map((post, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleViewPost('instagram', index)}>
-                      <div className="mb-2 line-clamp-2">{post}</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleSchedulePost('instagram', index)
-                        }}
-                        className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded hover:from-purple-600 hover:to-pink-600 transition-colors"
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span>Schedule</span>
-                      </button>
-                    </div>
-                  ))}
+                  {generatedContent.socialContent.instagram.map((post, index) => {
+                    const postContent = typeof post === 'string' ? post : post.content
+                    const postImage = typeof post === 'object' ? post.imageUrl : undefined
+                    const isGeneratingImg = generatingImage?.platform === 'instagram' && generatingImage?.index === index
+                    return (
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm cursor-pointer hover:bg-gray-100 transition-colors">
+                        {postImage && (
+                          <img src={postImage} alt="Post image" className="w-full h-32 object-cover rounded mb-2" />
+                        )}
+                        <div className="mb-2 line-clamp-2" onClick={() => handleViewPost('instagram', index)}>{postContent}</div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleGenerateImage('instagram', index)
+                            }}
+                            disabled={isGeneratingImg}
+                            className="flex items-center space-x-1 px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                          >
+                            {isGeneratingImg ? 'Generating...' : 'Generate Image'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSchedulePost('instagram', index)
+                            }}
+                            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded hover:from-purple-600 hover:to-pink-600 transition-colors"
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span>Schedule</span>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
