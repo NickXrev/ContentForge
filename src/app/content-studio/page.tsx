@@ -389,8 +389,9 @@ export default function ContentStudioPage() {
     const postContent = typeof post === 'string' ? post : post.content
     const postImageUrl = typeof post === 'object' ? post.imageUrl : undefined
     
-    const scheduledDateTime = prompt('Enter date and time (YYYY-MM-DD HH:MM):')
-    if (!scheduledDateTime) return
+      const dateTimeInput = window.prompt('Enter date and time (YYYY-MM-DD HH:MM):')
+      if (!dateTimeInput) return
+      const scheduledDateTime = dateTimeInput
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
