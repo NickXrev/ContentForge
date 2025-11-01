@@ -30,7 +30,7 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
   } else if (platform === 'facebook') {
     prompt += 'Create a Facebook post that encourages engagement and community interaction.'
   } else if (platform === 'blog') {
-    prompt += 'Create a comprehensive, long-form blog post (minimum 2000 words) with:\n- A compelling headline\n- Well-structured sections with H2 and H3 headings\n- Detailed explanations and examples\n- Actionable insights\n- Conclusion\n- Clear formatting with markdown (use # for H1, ## for H2, ### for H3, ** for bold, - for lists)\nMake it in-depth and valuable content that provides real value to readers.'
+    prompt += 'Create a comprehensive, long-form blog post (minimum 2500-3000 words, aim for 3000+ words) with:\n- A compelling headline\n- Well-structured sections with H2 and H3 headings\n- Detailed explanations and examples\n- Real-world use cases\n- Actionable insights and practical tips\n- Statistics and data where relevant\n- Multiple sub-sections within each main section\n- Conclusion with key takeaways\n- Clear formatting with markdown (use # for H1, ## for H2, ### for H3, ** for bold, - for lists)\n\nMake this a thorough, in-depth article that provides substantial value. Do not stop early - continue until you have written a full, comprehensive piece of at least 2500 words.'
   } else {
     prompt += `Create ${platform} content that is engaging and appropriate for the platform.`
   }
@@ -94,9 +94,17 @@ export async function POST(request: NextRequest) {
           .single()
 
         const model = aiModelConfig?.value || 'openai/gpt-4o-mini'
-        // Use higher token limit for blog posts
-        const defaultMaxTokens = platform === 'blog' ? '4000' : '1000'
-        const maxTokens = parseInt(maxTokensConfig?.value || defaultMaxTokens)
+        
+        // For blog posts, always use a higher token limit regardless of config
+        // For other platforms, use config value or default
+        let maxTokens: number
+        if (platform === 'blog') {
+          // Force higher tokens for long-form blog content
+          maxTokens = 4000
+        } else {
+          maxTokens = parseInt(maxTokensConfig?.value || '1000')
+        }
+        
         const temperature = parseFloat(temperatureConfig?.value || '0.7')
         const systemPrompt = systemPromptConfig?.value || 'You are a professional content creator who generates high-quality, engaging content for various social media platforms and blogs.'
 
