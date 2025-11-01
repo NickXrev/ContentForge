@@ -231,45 +231,50 @@ export default function ContentStudioPage() {
       // Extract key points from the long-form content to use as context
       const contentSummary = generatedContent.longFormContent.substring(0, 500) // Use first 500 chars as summary
       
-      const socialPromises = ['twitter', 'linkedin', 'instagram'].map(async (platform) => {
-        try {
-          const socialResponse = await fetch('/api/generate-content', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              topic: generatedContent.topic,
-              platform: platform,
-              tone: clientData?.brand_tone || 'professional',
-              longFormContent: generatedContent.longFormContent, // Pass full content for context
-              clientProfile: {
-                name: clientData?.company_name,
-                industry: clientData?.industry,
-                target_audience: clientData?.target_audience,
-                brand_voice: clientData?.brand_tone,
-                competitors: [],
-                goals: clientData?.content_goals || []
-              }
-            })
-          })
-
-          if (socialResponse.ok) {
-            const { content } = await socialResponse.json()
-            return { platform, content }
-          }
-          console.error(`Failed to generate ${platform} content:`, socialResponse.status)
-          return { platform, content: '' }
-        } catch (err) {
-          console.error(`Error generating ${platform} content:`, err)
-          return { platform, content: '' }
-        }
-      })
-
-      // Generate multiple posts per platform (3 each)
+      // Generate 3 unique posts per platform
+      const platforms = ['twitter', 'linkedin', 'instagram']
+      const postsPerPlatform = 3
       const allSocialPromises: Promise<{platform: string, content: string}>[] = []
-      for (let i = 0; i < 3; i++) {
-        allSocialPromises.push(...socialPromises)
+      
+      for (const platform of platforms) {
+        for (let i = 0; i < postsPerPlatform; i++) {
+          allSocialPromises.push(
+            (async () => {
+              try {
+                const socialResponse = await fetch('/api/generate-content', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    topic: generatedContent.topic,
+                    platform: platform,
+                    tone: clientData?.brand_tone || 'professional',
+                    longFormContent: generatedContent.longFormContent, // Pass full content for context
+                    clientProfile: {
+                      name: clientData?.company_name,
+                      industry: clientData?.industry,
+                      target_audience: clientData?.target_audience,
+                      brand_voice: clientData?.brand_tone,
+                      competitors: [],
+                      goals: clientData?.content_goals || []
+                    }
+                  })
+                })
+
+                if (socialResponse.ok) {
+                  const { content } = await socialResponse.json()
+                  return { platform, content }
+                }
+                console.error(`Failed to generate ${platform} content ${i + 1}:`, socialResponse.status)
+                return { platform, content: '' }
+              } catch (err) {
+                console.error(`Error generating ${platform} content ${i + 1}:`, err)
+                return { platform, content: '' }
+              }
+            })()
+          )
+        }
       }
       
       const socialResults = await Promise.all(allSocialPromises)
