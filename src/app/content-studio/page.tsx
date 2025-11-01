@@ -79,216 +79,187 @@ export default function ContentStudioPage() {
     setIsGenerating(true)
     goToStep('generating')
     
-    // Simulate AI generation with client context
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    try {
+      // Call real AI API for blog content
+      const response = await fetch('/api/generate-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: topic.topic,
+          platform: 'blog',
+          tone: clientData?.brand_tone || 'professional',
+          clientProfile: {
+            name: clientData?.company_name,
+            industry: clientData?.industry,
+            target_audience: clientData?.target_audience,
+            brand_voice: clientData?.brand_tone,
+            competitors: [],
+            goals: clientData?.content_goals || []
+          }
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate content')
+      }
+
+      const { content: longFormContent } = await response.json()
     
-    // Generate content using client intelligence
-    const mockContent: ContentPiece = {
-      id: Date.now().toString(),
-      title: `${topic.topic}: A ${clientData?.industry || 'Industry'} Guide`,
-      topic: topic.topic,
-      targetAudience: clientData?.target_audience || 'your target audience',
-      contentLength: 'long',
-      tone: clientData?.brand_tone || 'professional',
-      keywords: topic.keywords || clientData?.seo_keywords || [],
-      longFormContent: `# ${topic.topic}: A ${clientData?.industry || 'Industry'} Guide
-
-## Introduction
-
-${topic.topic} has become increasingly important in the ${clientData?.industry || 'industry'} landscape. This comprehensive guide will explore the key aspects, benefits, and implementation strategies that every ${clientData?.target_audience || 'professional'} should know.
-
-${clientData?.unique_value_prop ? `\n## Why This Matters for ${clientData.company_name}\n\n${clientData.unique_value_prop}\n` : ''}
-
-## Key Concepts
-
-### Understanding the Fundamentals
-
-The foundation of ${topic.topic} lies in understanding its core principles. These principles guide decision-making and ensure consistent results across different scenarios in the ${clientData?.industry || 'industry'}.
-
-### Best Practices
-
-1. **Research and Analysis**: Always start with thorough research
-2. **Strategic Planning**: Develop a clear roadmap
-3. **Implementation**: Execute with precision
-4. **Monitoring**: Track progress and adjust as needed
-
-## Advanced Strategies
-
-### Optimization Techniques
-
-Advanced practitioners use sophisticated techniques to maximize results. These include:
-
-- Data-driven decision making
-- A/B testing methodologies
-- Performance optimization
-- Continuous improvement processes
-
-### Common Challenges
-
-While ${topic.topic} offers many benefits, there are common challenges to be aware of:
-
-- Resource allocation
-- Timeline management
-- Quality control
-- Stakeholder alignment
-
-## Conclusion
-
-${topic.topic} represents a significant opportunity for ${clientData?.target_audience || 'professionals'}. By following the strategies outlined in this guide, you can achieve meaningful results and drive sustainable growth.
-
-## Next Steps
-
-1. Assess your current situation
-2. Develop a customized strategy
-3. Begin implementation
-4. Monitor and optimize
-
-Remember, success in ${topic.topic} requires patience, persistence, and continuous learning.`,
-      socialContent: {
-        twitter: [
-          `🚀 Just discovered the key to ${topic.topic}! 
-
-Here's what every ${clientData?.target_audience || 'professional'} needs to know:
-
-• Start with clear goals
-• Measure everything
-• Test and iterate often
-
-The landscape is changing fast. Are you keeping up?
-
-#${topic.topic.replace(/\s+/g, '')} #BusinessTips #Growth`,
-          `💡 Want to master ${topic.topic}?
-
-The secret isn't what you think.
-
-It's all about:
-→ Understanding your audience
-→ Creating real value
-→ Consistency over perfection
-
-Stop waiting for the "perfect" strategy. Start now with what you have.
-
-#${topic.topic.replace(/\s+/g, '')} #Marketing`,
-          `📈 The biggest mistake I see in ${topic.topic}?
-
-Trying to do everything at once.
-
-Focus on these 3 things:
-
-1. Build a strong foundation
-2. Automate what you can
-3. Track what matters
-
-Quality > quantity always.
-
-What's your #1 priority this week?
-
-#${topic.topic.replace(/\s+/g, '')} #Productivity`
-        ],
-        linkedin: [
-          `The landscape of ${topic.topic} is evolving rapidly in ${clientData?.industry || 'our industry'}. Here's what industry leaders are doing differently:
-
-🔄 They're focusing on long-term value over quick wins
-📊 They're data-driven but human-centered
-🤝 They're building authentic relationships
-
-The truth? Most companies are still stuck in outdated approaches.
-
-The future belongs to those who adapt.
-
-What's your take on this?
-
-#ProfessionalDevelopment #IndustryInsights`,
-          `After analyzing 100+ successful ${topic.topic} implementations, I've identified the common patterns that drive results:
-
-✅ Clear strategy and measurable KPIs
-✅ Strong leadership buy-in
-✅ Cross-functional collaboration
-✅ Continuous learning and optimization
-✅ Focus on customer impact, not vanity metrics
-
-The most successful teams don't have more resources. They have better systems.
-
-What patterns have you noticed?
-
-#BusinessStrategy #Leadership`,
-          `The future of ${topic.topic} depends on these three critical factors:
-
-1️⃣ **Adaptability** - The willingness to pivot when data shows a better path
-
-2️⃣ **Integration** - Seamlessly connecting with existing systems and processes
-
-3️⃣ **People** - Never forgetting that at the end of every strategy are real people
-
-Too often we focus on the tech and forget the humans.
-
-The most sophisticated tools fail if they don't serve people.
-
-Thoughts?
-
-#FutureOfWork #Innovation`
-        ],
-        instagram: [
-          `✨ The ${topic.topic} transformation you've been waiting for! 
-
-Swipe to see the complete guide 👆
-
-Here's what makes this different:
-• Step-by-step roadmap
-• Real-world examples
-• Actionable strategies
-
-Ready to level up?
-
-Save this post and share your #1 takeaway below 👇
-
-#${topic.topic.replace(/\s+/g, '')} #BusinessGrowth #Tips`,
-          `🎯 Ready to level up your ${topic.topic} game?
-
-Here's everything you need to know:
-
-💡 Start with the basics
-📊 Track what matters
-🚀 Scale what works
-
-The best time to start? Right now.
-
-Drop a 💬 if you want more content like this!
-
-#${topic.topic.replace(/\s+/g, '')} #Entrepreneurship #Growth`,
-          `💫 From beginner to expert: Your complete ${topic.topic} roadmap starts here!
-
-Here's your journey:
-
-✨ Foundation - Learn the fundamentals
-📈 Growth - Apply what you've learned
-🚀 Mastery - Teach others and refine
-
-Every expert was once a beginner.
-
-What step are you on?
-
-Tag someone who needs to see this! ⬇️
-
-#${topic.topic.replace(/\s+/g, '')} #PersonalGrowth #Success`
-        ]
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: 'draft'
+      // Generate social media posts using AI
+      const socialPromises = ['twitter', 'linkedin', 'instagram'].map(async (platform) => {
+        try {
+          const socialResponse = await fetch('/api/generate-content', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              topic: topic.topic,
+              platform: platform,
+              tone: clientData?.brand_tone || 'professional',
+              clientProfile: {
+                name: clientData?.company_name,
+                industry: clientData?.industry,
+                target_audience: clientData?.target_audience,
+                brand_voice: clientData?.brand_tone,
+                competitors: [],
+                goals: clientData?.content_goals || []
+              }
+            })
+          })
+
+          if (socialResponse.ok) {
+            const { content } = await socialResponse.json()
+            return { platform, content }
+          }
+          return { platform, content: '' }
+        } catch (err) {
+          console.error(`Error generating ${platform} content:`, err)
+          return { platform, content: '' }
+        }
+      })
+
+      // Generate multiple posts per platform (3 each)
+      const allSocialPromises: Promise<{platform: string, content: string}>[] = []
+      for (let i = 0; i < 3; i++) {
+        allSocialPromises.push(...socialPromises)
+      }
+      
+      const socialResults = await Promise.all(allSocialPromises)
+      
+      // Group by platform
+      const socialContent: { twitter: string[], linkedin: string[], instagram: string[] } = {
+        twitter: [],
+        linkedin: [],
+        instagram: []
+      }
+
+      socialResults.forEach(result => {
+        if (result.content && result.platform in socialContent) {
+          socialContent[result.platform as keyof typeof socialContent].push(result.content)
+        }
+      })
+
+      // Extract title from content (first line or H1)
+      const titleMatch = longFormContent.match(/^#\s*(.+)$/m) || longFormContent.match(/^(.+)$/m)
+      const title = titleMatch ? titleMatch[1].replace(/^#+\s*/, '') : `${topic.topic}: A ${clientData?.industry || 'Industry'} Guide`
+
+      const generatedContentData: ContentPiece = {
+        id: Date.now().toString(),
+        title: title,
+        topic: topic.topic,
+        targetAudience: clientData?.target_audience || 'your target audience',
+        contentLength: 'long',
+        tone: (clientData?.brand_tone as 'professional' | 'casual' | 'authoritative' | 'conversational') || 'professional',
+        keywords: topic.keywords || clientData?.seo_keywords || [],
+        longFormContent: longFormContent,
+        socialContent: socialContent,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'draft'
+      }
+      
+      setGeneratedContent(generatedContentData)
+      goToStep('preview')
+    } catch (error) {
+      console.error('Error generating content:', error)
+      alert(`Error generating content: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsGenerating(false)
     }
-    
-    setGeneratedContent(mockContent)
-    goToStep('preview')
-    setIsGenerating(false)
   }
 
   const handleSave = async () => {
     if (!generatedContent) return
     
-    // TODO: Implement save to database
-    console.log('Saving content:', generatedContent)
-    alert('Content saved successfully!')
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      // Get user from public.users table first
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single()
+
+      if (userError || !userData) {
+        throw new Error('User not found in database')
+      }
+
+      // Get user's team
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('owner_id', userData.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (teamsError || !teamsData || teamsData.length === 0) {
+        throw new Error('No team found. Please complete your profile setup first.')
+      }
+
+      const teamId = teamsData[0].id
+
+      // Save main content document
+      const { data: document, error: docError } = await supabase
+        .from('content_documents')
+        .insert({
+          team_id: teamId,
+          title: generatedContent.title,
+          content: generatedContent.longFormContent,
+          platform: 'blog',
+          status: 'draft',
+          topic: generatedContent.topic,
+          created_by: user.id,
+          metadata: {
+            target_audience: generatedContent.targetAudience,
+            tone: generatedContent.tone,
+            keywords: generatedContent.keywords,
+            content_length: generatedContent.contentLength,
+            social_content: generatedContent.socialContent
+          }
+        })
+        .select()
+        .single()
+
+      if (docError) {
+        console.error('Database error:', docError)
+        throw new Error(`Failed to save content: ${docError.message}`)
+      }
+
+      alert('Content saved successfully!')
+    } catch (error) {
+      console.error('Error saving content:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Please try again.'
+      alert(`Error saving content: ${errorMessage}`)
+    }
   }
 
   const handleGenerateSocial = () => {
@@ -358,7 +329,8 @@ Tag someone who needs to see this! ⬇️
       setSchedulingPost(null)
     } catch (error) {
       console.error('Error scheduling post:', error)
-      alert(`Error scheduling post: ${error.message || 'Please try again.'}`)
+      const errorMessage = error instanceof Error ? error.message : 'Please try again.'
+      alert(`Error scheduling post: ${errorMessage}`)
     }
   }
 
@@ -425,7 +397,7 @@ Tag someone who needs to see this! ⬇️
                 <button
                   onClick={() => {
                     if (canClick && step.key !== 'generating') {
-                      goToStep(step.key as 'input' | 'generating' | 'preview' | 'social')
+                      goToStep(step.key as 'suggestions' | 'generating' | 'preview' | 'social')
                     }
                   }}
                   disabled={!canClick || step.key === 'generating'}
@@ -473,18 +445,18 @@ Tag someone who needs to see this! ⬇️
           </button>
         )}
         
-        {currentStep !== 'social' && generatedContent && (
+        {currentStep !== 'social' && (
           <button
             onClick={() => {
-              if (currentStep === 'preview') {
+              if (currentStep === 'preview' && generatedContent) {
                 handleGenerateSocial()
-              } else if (currentStep === 'input' && formData.topic.trim()) {
+              } else if (currentStep === 'suggestions' && (selectedTopic || customTopic.trim())) {
                 handleGenerate()
               }
             }}
-            disabled={currentStep === 'input' && !formData.topic.trim()}
+            disabled={currentStep === 'suggestions' && !selectedTopic && !customTopic.trim()}
             className={`fixed right-4 top-1/2 transform -translate-y-1/2 z-10 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all ${
-              (currentStep === 'input' && formData.topic.trim()) || currentStep === 'preview'
+              ((currentStep === 'suggestions' && (selectedTopic || customTopic.trim())) || (currentStep === 'preview' && generatedContent))
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
@@ -723,8 +695,30 @@ Tag someone who needs to see this! ⬇️
                   }}
                 />
               ) : (
-                <div className="prose max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: generatedContent.longFormContent.replace(/\n/g, '<br>') }} />
+                <div className="prose max-w-none prose-headings:font-bold prose-p:text-gray-700 prose-li:text-gray-700">
+                  <div className="whitespace-pre-wrap text-gray-800 font-sans">
+                    {generatedContent.longFormContent.split('\n').map((line, index) => {
+                      // Basic markdown rendering
+                      if (line.startsWith('# ')) {
+                        return <h1 key={index} className="text-3xl font-bold mt-6 mb-4">{line.substring(2)}</h1>
+                      }
+                      if (line.startsWith('## ')) {
+                        return <h2 key={index} className="text-2xl font-bold mt-5 mb-3">{line.substring(3)}</h2>
+                      }
+                      if (line.startsWith('### ')) {
+                        return <h3 key={index} className="text-xl font-bold mt-4 mb-2">{line.substring(4)}</h3>
+                      }
+                      if (line.startsWith('- ') || line.startsWith('* ')) {
+                        return <li key={index} className="ml-4 list-disc">{line.substring(2)}</li>
+                      }
+                      if (line.trim() === '') {
+                        return <br key={index} />
+                      }
+                      // Bold text
+                      const boldLine = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                      return <p key={index} className="mb-4" dangerouslySetInnerHTML={{ __html: boldLine }} />
+                    })}
+                  </div>
                 </div>
               )}
             </div>
