@@ -740,9 +740,9 @@ export default function ContentStudioPage() {
                             <button
                               onClick={() => handleGenerateImage('twitter', i)}
                               disabled={generatingImage?.platform === 'twitter' && generatingImage?.index === i}
-                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Image
+                              {generatingImage?.platform === 'twitter' && generatingImage?.index === i ? 'Generating...' : 'Image'}
                             </button>
                             <button
                               onClick={() => handleSchedulePost('twitter', i)}
