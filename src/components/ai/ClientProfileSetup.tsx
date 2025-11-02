@@ -58,34 +58,50 @@ export function ClientProfileSetup({ onComplete }: ClientProfileSetupProps) {
     setError('')
     
     try {
-        // First, create or get the user's team
-        const { data: teams } = await supabase
-          .from('teams')
-          .select('id')
-          .eq('owner_id', user.id)
+        // First, check if user is already a team member
+        const { data: existingMembership } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', user.id)
           .limit(1)
+          .maybeSingle()
 
-        let teamId = teams?.[0]?.id
+        let teamId = existingMembership?.team_id ?? null
 
         if (!teamId) {
-          const { data: newTeam, error: teamError } = await supabase
+          // Check if user owns a team
+          const { data: ownedTeam } = await supabase
             .from('teams')
-            .insert({
-              name: `${profile.name} Team`,
-              owner_id: user.id
-            })
             .select('id')
-            .single()
+            .eq('owner_id', user.id)
+            .limit(1)
+            .maybeSingle()
 
-          if (teamError) {
-            setError(`Error creating team: ${teamError.message}`)
-            return
-          }
+          if (ownedTeam) {
+            teamId = ownedTeam.id
+            // Ensure user is a member
+            await supabase
+              .from('team_members')
+              .upsert({ team_id: teamId, user_id: user.id, role: 'admin' }, { onConflict: 'team_id,user_id' })
+          } else {
+            // Create new team
+            const { data: newTeam, error: teamError } = await supabase
+              .from('teams')
+              .insert({
+                name: `${profile.name} Team`,
+                owner_id: user.id
+              })
+              .select('id')
+              .single()
 
-          teamId = newTeam?.id
+            if (teamError || !newTeam) {
+              setError(`Error creating team: ${teamError?.message || 'Unknown error'}`)
+              return
+            }
 
-          // Add the user as an admin member of their own team
-          if (teamId) {
+            teamId = newTeam.id
+
+            // Add the user as an admin member of their own team
             const { error: memberError } = await supabase
               .from('team_members')
               .insert({
@@ -95,8 +111,9 @@ export function ClientProfileSetup({ onComplete }: ClientProfileSetupProps) {
               })
 
             if (memberError) {
-              console.warn('Could not add user as team member:', memberError.message)
-              // Don't fail the whole process for this
+              console.error('Could not add user as team member:', memberError.message)
+              setError(`Error adding user to team: ${memberError.message}`)
+              return
             }
           }
         }

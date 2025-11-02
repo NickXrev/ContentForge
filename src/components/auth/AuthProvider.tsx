@@ -34,9 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
 
-      // Create or update user profile when user signs in via server route
+      // Create or update user profile and ensure team exists when user signs in
       if (event === 'SIGNED_IN' && session?.user) {
-        await upsertUserProfile(session.user, session.user.user_metadata?.full_name)
+        try {
+          await upsertUserProfile(session.user, session.user.user_metadata?.full_name)
+          // upsertUserProfile now handles team creation, but ensure it's complete
+          // This covers OAuth signups too
+        } catch (error) {
+          console.error('Error ensuring user/team setup:', error)
+          // Don't block sign-in for this
+        }
       }
     })
 
@@ -88,10 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Supabase auth error:', error)
         // Create a more detailed error object
         const detailedError = new Error(error.message || 'Authentication failed')
-        ;(detailedError as any).status = error.status
-        ;(detailedError as any).statusText = error.statusText
-        ;(detailedError as any).details = error.details
-        ;(detailedError as any).hint = error.hint
+        ;(detailedError as any).status = (error as any).status
+        ;(detailedError as any).statusText = (error as any).statusText
+        ;(detailedError as any).details = (error as any).details
+        ;(detailedError as any).hint = (error as any).hint
         // Fallback: try admin signup via server route for RLS-trigger failures
         if ((error.message || '').includes('Database error saving new user')) {
           const res = await fetch('/api/auth/admin-signup', {
@@ -123,9 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('Auth signup successful:', data)
       
-      // Upsert user profile via server route immediately
+      // Upsert user profile and ensure team exists via server route immediately
       if (data.user) {
         await upsertUserProfile(data.user, fullName)
+        // upsertUserProfile now handles both user and team setup
       }
       
     } catch (error) {

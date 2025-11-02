@@ -247,31 +247,69 @@ export default function ClientOnboarding() {
 
       // Check if user already has a team, if not create one
       let teamData
-      const { data: existingTeam, error: teamCheckError } = await supabase
-        .from('teams')
-        .select('id')
-        .eq('owner_id', userData.id)
-        .single()
+      const { data: existingMembership } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', userData.id)
+        .limit(1)
+        .maybeSingle()
 
-      if (teamCheckError || !existingTeam) {
-        // No team exists, create one
-        const { data: newTeam, error: teamError } = await supabase
+      if (existingMembership?.team_id) {
+        // User is already a member of a team
+        const { data: existingTeam } = await supabase
           .from('teams')
-          .insert({
-            name: `${formData.companyName} Team`,
-            description: `Team for ${formData.companyName}`,
-            owner_id: userData.id
-          })
           .select('id')
+          .eq('id', existingMembership.team_id)
           .single()
+        teamData = existingTeam || null
+      }
 
-        if (teamError || !newTeam) {
-          throw new Error('Failed to create team')
+      if (!teamData) {
+        // Check if user owns a team
+        const { data: ownedTeam } = await supabase
+          .from('teams')
+          .select('id')
+          .eq('owner_id', userData.id)
+          .limit(1)
+          .maybeSingle()
+
+        if (ownedTeam) {
+          teamData = ownedTeam
+          // Ensure user is a member
+          await supabase
+            .from('team_members')
+            .upsert({ team_id: ownedTeam.id, user_id: userData.id, role: 'admin' }, { onConflict: 'team_id,user_id' })
+        } else {
+          // No team exists, create one
+          const { data: newTeam, error: teamError } = await supabase
+            .from('teams')
+            .insert({
+              name: `${formData.companyName} Team`,
+              description: `Team for ${formData.companyName}`,
+              owner_id: userData.id
+            })
+            .select('id')
+            .single()
+
+          if (teamError || !newTeam) {
+            throw new Error('Failed to create team')
+          }
+          teamData = newTeam
+
+          // Create team_members entry
+          const { error: memberError } = await supabase
+            .from('team_members')
+            .insert({
+              team_id: newTeam.id,
+              user_id: userData.id,
+              role: 'admin'
+            })
+
+          if (memberError) {
+            console.error('Failed to create team member:', memberError)
+            throw new Error('Failed to add user to team')
+          }
         }
-        teamData = newTeam
-      } else {
-        // Use existing team
-        teamData = existingTeam
       }
 
       // Check if client profile already exists for this team
