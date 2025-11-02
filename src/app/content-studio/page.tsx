@@ -856,14 +856,45 @@ export default function ContentStudioPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">{activeContent.title}</h2>
-                <button
-                  onClick={handleContinueToSocial}
-                  disabled={isGenerating}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{isGenerating ? 'Generating...' : 'Generate Social Posts'}</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  {/* Check if social posts already exist */}
+                  {activeContent.socialContent && (
+                    activeContent.socialContent.twitter.length > 0 ||
+                    activeContent.socialContent.linkedin.length > 0 ||
+                    activeContent.socialContent.instagram.length > 0
+                  ) ? (
+                    <>
+                      <button
+                        onClick={() => setCurrentStep('social-posts')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                      >
+                        <ArrowRight className="w-4 h-4 rotate-180" />
+                        <span>View Social Posts</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('This will generate new social posts and replace existing ones. Continue?')) {
+                            handleContinueToSocial()
+                          }
+                        }}
+                        disabled={isGenerating}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center space-x-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>{isGenerating ? 'Generating...' : 'Regenerate Social Posts'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleContinueToSocial}
+                      disabled={isGenerating}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>{isGenerating ? 'Generating...' : 'Generate Social Posts'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
               
               {/* Unified Editable Preview */}
