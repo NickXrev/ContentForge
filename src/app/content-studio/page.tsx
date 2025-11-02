@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles, TrendingUp, Lightbulb, ArrowRight, ChevronLeft, Clock, Edit3, Image as ImageIcon, X } from 'lucide-react'
 import SocialPostModal from '@/components/content-studio/SocialPostModal'
@@ -49,6 +49,7 @@ export default function ContentStudioPage() {
   const [schedulingPost, setSchedulingPost] = useState<{platform: string, index: number} | null>(null)
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' })
   const [selectedPost, setSelectedPost] = useState<{platform: string, index: number} | null>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
 
   // Load previous content on mount
   useEffect(() => {
@@ -452,6 +453,145 @@ export default function ContentStudioPage() {
     }
   }
 
+  const renderMarkdownToHtml = (text: string): string => {
+    if (!text) return ''
+    
+    let html = ''
+    const lines = text.split('\n')
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      
+      if (line.startsWith('# ')) {
+        html += `<h1 class="text-3xl font-bold mt-6 mb-4">${escapeHtml(line.substring(2))}</h1>`
+      } else if (line.startsWith('## ')) {
+        html += `<h2 class="text-2xl font-bold mt-5 mb-3">${escapeHtml(line.substring(3))}</h2>`
+      } else if (line.startsWith('### ')) {
+        html += `<h3 class="text-xl font-bold mt-4 mb-2">${escapeHtml(line.substring(4))}</h3>`
+      } else if (line.startsWith('#### ')) {
+        html += `<h4 class="text-lg font-bold mt-3 mb-2">${escapeHtml(line.substring(5))}</h4>`
+      } else if (line.startsWith('- ') || line.startsWith('* ')) {
+        html += `<li class="ml-4 mb-1">${escapeHtml(line.substring(2))}</li>`
+      } else if (line.trim() === '') {
+        html += `<br />`
+      } else {
+        // Process inline markdown: **bold**, *italic*, `code`
+        let processedLine = escapeHtml(line)
+        processedLine = processedLine.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        processedLine = processedLine.replace(/\*(.+?)\*/g, '<em>$1</em>')
+        processedLine = processedLine.replace(/`(.+?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">$1</code>')
+        html += `<p class="mb-4">${processedLine}</p>`
+      }
+    }
+    
+    return html
+  }
+
+  const escapeHtml = (text: string): string => {
+    if (typeof document === 'undefined') {
+      // SSR fallback
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+    }
+    const div = document.createElement('div')
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  // Initialize and update contenteditable when activeContent changes
+  useEffect(() => {
+    if (editorRef.current && activeContent && currentStep === 'longform-editor') {
+      // Only update if the editor is not currently focused (user isn't typing)
+      const isFocused = document.activeElement?.isSameNode(editorRef.current)
+      if (!isFocused) {
+        const html = renderMarkdownToHtml(activeContent.longFormContent)
+        // Only update if content actually changed to avoid cursor jumps
+        if (editorRef.current.innerHTML !== html) {
+          editorRef.current.innerHTML = html
+        }
+      }
+    }
+  }, [activeContent?.id, currentStep])
+
+  // Initialize content when switching to longform editor
+  useEffect(() => {
+    if (editorRef.current && activeContent && currentStep === 'longform-editor') {
+      const html = renderMarkdownToHtml(activeContent.longFormContent)
+      if (editorRef.current.innerHTML !== html) {
+        editorRef.current.innerHTML = html
+      }
+    }
+  }, [currentStep])
+
+  const convertHtmlToMarkdown = (element: HTMLElement): string => {
+    let markdown = ''
+    const nodes = Array.from(element.childNodes)
+    
+    for (const node of nodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        markdown += node.textContent || ''
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement
+        const tagName = el.tagName.toLowerCase()
+        const text = el.textContent || ''
+        
+        if (tagName === 'h1') {
+          markdown += `# ${text}\n\n`
+        } else if (tagName === 'h2') {
+          markdown += `## ${text}\n\n`
+        } else if (tagName === 'h3') {
+          markdown += `### ${text}\n\n`
+        } else if (tagName === 'h4') {
+          markdown += `#### ${text}\n\n`
+        } else if (tagName === 'strong' || tagName === 'b') {
+          markdown += `**${text}**`
+        } else if (tagName === 'em' || tagName === 'i') {
+          markdown += `*${text}*`
+        } else if (tagName === 'code') {
+          markdown += `\`${text}\``
+        } else if (tagName === 'li') {
+          markdown += `- ${text}\n`
+        } else if (tagName === 'p') {
+          // Check for inline formatting
+          let pContent = ''
+          const pNodes = Array.from(el.childNodes)
+          for (const pNode of pNodes) {
+            if (pNode.nodeType === Node.TEXT_NODE) {
+              pContent += pNode.textContent || ''
+            } else if (pNode.nodeType === Node.ELEMENT_NODE) {
+              const pEl = pNode as HTMLElement
+              if (pEl.tagName.toLowerCase() === 'strong') {
+                pContent += `**${pEl.textContent || ''}**`
+              } else if (pEl.tagName.toLowerCase() === 'em') {
+                pContent += `*${pEl.textContent || ''}*`
+              } else if (pEl.tagName.toLowerCase() === 'code') {
+                pContent += `\`${pEl.textContent || ''}\``
+              } else {
+                pContent += pEl.textContent || ''
+              }
+            }
+          }
+          if (pContent.trim()) {
+            markdown += pContent + '\n\n'
+          }
+        } else if (tagName === 'br') {
+          markdown += '\n'
+        } else {
+          // Fallback: just get text content
+          markdown += text
+        }
+      }
+    }
+    
+    // Clean up extra newlines
+    return markdown.replace(/\n{3,}/g, '\n\n').trim()
+  }
+
+  // Keep renderMarkdown for backwards compatibility if needed elsewhere
   const renderMarkdown = (text: string) => {
     return text.split('\n').map((line, index) => {
       if (line.startsWith('# ')) {
@@ -655,7 +795,7 @@ export default function ContentStudioPage() {
 
         {currentStep === 'longform-editor' && activeContent && (
           <div className="max-w-5xl mx-auto px-6 py-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">{activeContent.title}</h2>
                 <button
@@ -668,28 +808,55 @@ export default function ContentStudioPage() {
                 </button>
               </div>
               
-              <textarea
-                value={activeContent.longFormContent}
-                onChange={(e) => {
-                  setActiveContent({
-                    ...activeContent,
-                    longFormContent: e.target.value,
-                    updatedAt: new Date().toISOString()
-                  })
-                }}
-                className="w-full h-[600px] p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-none"
-                placeholder="Your content..."
-              />
-              
-              <div className="mt-4 text-sm text-gray-600">
-                {activeContent.longFormContent.split(/\s+/).filter(w => w.length > 0).length} words
+              {/* Unified Editable Preview */}
+              <div className="relative">
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={(e) => {
+                    // Debounce updates to avoid excessive re-renders
+                    const markdown = convertHtmlToMarkdown(e.currentTarget)
+                    if (markdown !== activeContent.longFormContent) {
+                      setActiveContent({
+                        ...activeContent,
+                        longFormContent: markdown,
+                        updatedAt: new Date().toISOString()
+                      })
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Ensure markdown is saved when user leaves the field
+                    const markdown = convertHtmlToMarkdown(e.currentTarget)
+                    if (markdown !== activeContent.longFormContent) {
+                      const updated = {
+                        ...activeContent,
+                        longFormContent: markdown,
+                        updatedAt: new Date().toISOString()
+                      }
+                      setActiveContent(updated)
+                      autoSave(updated)
+                    }
+                  }}
+                  className="w-full min-h-[600px] p-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 prose max-w-none outline-none cursor-text"
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(activeContent.longFormContent) }}
+                />
+                
+                {/* Placeholder when empty */}
+                {!activeContent.longFormContent && (
+                  <div className="absolute top-6 left-6 text-gray-400 pointer-events-none">
+                    Start writing your content... (Supports markdown: # headers, **bold**, - lists)
+                  </div>
+                )}
               </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4">Preview</h3>
-              <div className="prose max-w-none">
-                {renderMarkdown(activeContent.longFormContent)}
+              
+              <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+                <span>{activeContent.longFormContent.split(/\s+/).filter(w => w.length > 0).length} words</span>
+                <span className="text-xs text-gray-500">Edit directly in the preview above</span>
               </div>
             </div>
           </div>
