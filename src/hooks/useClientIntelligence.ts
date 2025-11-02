@@ -140,114 +140,47 @@ export function useClientIntelligence() {
         })
       }
 
-      // Get trending topics for their industry (or Technology as fallback)
-      const industry = profileData?.industry || 'Technology'
-      const { data: topicsData, error: topicsError } = await supabase
-        .rpc('get_trending_topics', { 
-          client_industry: industry,
-          limit_count: 5
+      // Get user's team for topic suggestions (use the teamId we already have)
+      const finalTeamId = teamId || (await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', userData.id)
+        .single()).data?.team_id
+
+      // Fetch personalized topic suggestions based on client profile and previous content
+      try {
+        const topicsResponse = await fetch('/api/generate-topic-suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userData.id,
+            teamId: finalTeamId
+          })
         })
 
-      const dedupe = (items: TrendingTopic[]): TrendingTopic[] => {
-        const map = new Map<string, TrendingTopic>()
-        for (const item of items) {
-          const key = item.topic.trim().toLowerCase()
-          if (!map.has(key)) map.set(key, item)
-        }
-        return Array.from(map.values())
-      }
-
-      if (topicsError) {
-        console.warn('Could not fetch trending topics:', topicsError)
-        // Fallback to mock data - Updated for Q4 2025
-        setTrendingTopics(dedupe([
-          {
-            topic: 'AI-Powered Business Automation',
-            trending_score: 98,
-            keywords: ['AI automation', 'business efficiency', 'workflow optimization', 'productivity tools'],
-            content_angle: 'How AI is transforming business operations and workflow management',
-            target_audience: 'Business owners and managers'
-          },
-          {
-            topic: 'Sustainable Business Practices',
-            trending_score: 92,
-            keywords: ['sustainability', 'ESG', 'green business', 'carbon footprint'],
-            content_angle: 'The growing importance of sustainability in business strategy',
-            target_audience: 'Business leaders and decision makers'
-          },
-          {
-            topic: 'Personal Branding in the Digital Age',
-            trending_score: 89,
-            keywords: ['personal branding', 'thought leadership', 'social media', 'professional growth'],
-            content_angle: 'Building a strong personal brand to advance your career',
-            target_audience: 'Professionals and entrepreneurs'
-          },
-          {
-            topic: 'Cybersecurity for Small Businesses',
-            trending_score: 85,
-            keywords: ['cybersecurity', 'data protection', 'small business security', 'threat prevention'],
-            content_angle: 'Essential cybersecurity measures every small business needs',
-            target_audience: 'Small business owners and IT managers'
-          },
-          {
-            topic: 'Customer Experience Innovation',
-            trending_score: 87,
-            keywords: ['customer experience', 'CX', 'customer satisfaction', 'service excellence'],
-            content_angle: 'Innovative approaches to delivering exceptional customer experiences',
-            target_audience: 'Customer service and marketing teams'
-          },
-          {
-            topic: 'Generative AI for Content Marketing',
-            trending_score: 93,
-            keywords: ['genai', 'content ops', 'content at scale', 'prompt engineering'],
-            content_angle: 'Practical ways to integrate GenAI into your content workflow',
-            target_audience: 'Content and growth teams'
-          },
-          {
-            topic: 'Privacy-First Analytics',
-            trending_score: 84,
-            keywords: ['GDPR', 'cookieless', 'first-party data', 'measurement'],
-            content_angle: 'Measuring performance in a cookieless world',
-            target_audience: 'Marketing leaders and analysts'
-          },
-          {
-            topic: 'Video Content Strategy 2025',
-            trending_score: 88,
-            keywords: ['short-form', 'YouTube', 'editing', 'distribution'],
-            content_angle: 'From short-form to long-form: a full-funnel video plan',
-            target_audience: 'Creators and brand teams'
-          },
-          {
-            topic: 'Community-Led Growth',
-            trending_score: 82,
-            keywords: ['community', 'advocacy', 'retention', 'word of mouth'],
-            content_angle: 'Turning users into advocates with community programs',
-            target_audience: 'Product marketing and success teams'
-          },
-          {
-            topic: 'No-Code Automation Playbooks',
-            trending_score: 80,
-            keywords: ['zapier', 'make', 'workflows', 'ops efficiency'],
-            content_angle: 'Ship more with no-code automations across GTM',
-            target_audience: 'Ops and marketing teams'
-          },
-          {
-            topic: 'Email Deliverability Best Practices',
-            trending_score: 79,
-            keywords: ['DMARC', 'SPF', 'DKIM', 'inbox placement'],
-            content_angle: 'Keeping your campaigns out of the spam folder',
-            target_audience: 'Lifecycle and CRM marketers'
-          },
-          {
-            topic: 'Modern SEO in 2025',
-            trending_score: 90,
-            keywords: ['search intent', 'EEAT', 'programmatic SEO', 'SERP features'],
-            content_angle: 'What actually moves rankings post-HCU',
-            target_audience: 'Growth and SEO teams'
+        if (topicsResponse.ok) {
+          const topicsData = await topicsResponse.json()
+          if (topicsData.topics && Array.isArray(topicsData.topics)) {
+            const dedupe = (items: TrendingTopic[]): TrendingTopic[] => {
+              const map = new Map<string, TrendingTopic>()
+              for (const item of items) {
+                const key = item.topic.trim().toLowerCase()
+                if (!map.has(key)) map.set(key, item)
+              }
+              return Array.from(map.values())
+            }
+            setTrendingTopics(dedupe(topicsData.topics))
+          } else {
+            console.warn('Invalid topics response format')
+            setTrendingTopics([])
           }
-        ]))
-      } else {
-        setTrendingTopics(dedupe((topicsData as TrendingTopic[]) || []))
+        } else {
+          console.warn('Failed to fetch personalized topics:', topicsResponse.status)
+          setTrendingTopics([])
+        }
+      } catch (topicsError) {
+        console.warn('Error fetching personalized topics:', topicsError)
+        setTrendingTopics([])
       }
     } catch (err) {
       console.error('Error fetching client intelligence:', err)
