@@ -38,11 +38,18 @@ export default function SocialPostModal({
 
   const platformConfig = {
     twitter: {
-      name: 'Twitter / X',
+      name: 'X (Twitter)',
       color: 'bg-sky-500',
-      icon: '🐦',
+      icon: '✖️',
       bgColor: 'bg-sky-50',
       borderColor: 'border-sky-200'
+    },
+    x: {
+      name: 'X (Twitter)',
+      color: 'bg-black',
+      icon: '✖️',
+      bgColor: 'bg-gray-50',
+      borderColor: 'border-gray-300'
     },
     linkedin: {
       name: 'LinkedIn',
@@ -92,13 +99,13 @@ export default function SocialPostModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop */}
+        {/* Backdrop with blur effect */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black bg-opacity-50"
+          className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-md"
         />
 
         {/* Modal */}
@@ -175,9 +182,9 @@ export default function SocialPostModal({
                   </p>
                   <div className="flex items-center space-x-2 text-xs text-gray-500">
                     <span>{post.content.length} characters</span>
-                    {platform === 'twitter' && (
-                      <span className={`${post.content.length > 280 ? 'text-red-600 font-medium' : ''}`}>
-                        {280 - post.content.length} remaining
+                    {(platform === 'twitter' || platform === 'x') && (
+                      <span className={`${post.content.length > 250 ? 'text-red-600 font-medium' : post.content.length > 230 ? 'text-orange-600' : 'text-green-600'}`}>
+                        {250 - post.content.length} remaining
                       </span>
                     )}
                   </div>

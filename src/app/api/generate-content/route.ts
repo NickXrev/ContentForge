@@ -22,7 +22,7 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
   prompt += `Platform: ${platform}\n\n`
   
   if (platform === 'twitter' || platform === 'x') {
-    prompt += 'Create a Twitter/X post (max 280 characters) that is engaging and includes relevant hashtags.'
+    prompt += 'Create an X (formerly Twitter) post that is EXACTLY 250 characters or less (including spaces and hashtags). This is CRITICAL - the post must be concise, engaging, and stay under 250 characters. Count characters carefully and ensure the final post does not exceed this limit. Include 1-2 relevant hashtags if they fit within the limit.'
   } else if (platform === 'linkedin') {
     prompt += 'Create a LinkedIn post that is professional and thought-provoking, suitable for B2B audience.'
   } else if (platform === 'instagram') {
@@ -124,7 +124,24 @@ export async function POST(request: NextRequest) {
           temperature: temperature
         })
 
-    const content = response.choices[0]?.message?.content || 'Failed to generate content'
+    let content = response.choices[0]?.message?.content || 'Failed to generate content'
+    
+    // Clean up content (remove markdown, extra whitespace)
+    content = content.trim()
+    // Remove markdown code blocks if present
+    if (content.startsWith('```')) {
+      content = content.replace(/^```[\w]*\n?/g, '').replace(/\n?```$/g, '')
+    }
+    
+    // For X/Twitter, enforce strict character limit and truncate if needed
+    if (platform === 'twitter' || platform === 'x') {
+      const MAX_X_CHARS = 250
+      if (content.length > MAX_X_CHARS) {
+        // Truncate and add ellipsis if needed, but try to preserve meaning
+        content = content.substring(0, MAX_X_CHARS - 3).trim() + '...'
+        console.warn(`X/Twitter post exceeded ${MAX_X_CHARS} characters, truncated to ${content.length}`)
+      }
+    }
 
     return NextResponse.json({ content })
   } catch (error) {

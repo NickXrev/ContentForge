@@ -714,7 +714,7 @@ export default function ContentStudioPage() {
 
             {/* All posts in a unified card grid - grouped by platform */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Twitter Posts */}
+              {/* X/Twitter Posts */}
               {activeContent.socialContent.twitter.map((post, i) => {
                 const content = typeof post === 'string' ? post : post.content
                 const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
@@ -725,13 +725,13 @@ export default function ContentStudioPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
                     onClick={() => setSelectedPost({ platform: 'twitter', index: i })}
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
+                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-sky-300 transition-all group"
                   >
                     <div className="flex items-center space-x-2 mb-3">
-                      <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        T
+                      <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        ✖
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">Twitter</span>
+                      <span className="text-sm font-semibold text-gray-700">X (Twitter)</span>
                     </div>
                     {imageUrl ? (
                       <div className="mb-3 rounded-lg overflow-hidden">
@@ -745,8 +745,8 @@ export default function ContentStudioPage() {
                     <p className="text-sm text-gray-700 line-clamp-3 mb-3">{content}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{content.length} chars</span>
-                      <span className={`${content.length > 280 ? 'text-red-500' : ''}`}>
-                        {280 - content.length} remaining
+                      <span className={`${content.length > 250 ? 'text-red-500 font-medium' : content.length > 230 ? 'text-orange-500' : 'text-green-600'}`}>
+                        {250 - content.length} remaining
                       </span>
                     </div>
                   </motion.div>
@@ -897,7 +897,7 @@ export default function ContentStudioPage() {
 
       {/* Schedule Modal (keep for backward compatibility) */}
       {schedulingPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">Schedule Post</h3>
             <div className="space-y-4">
