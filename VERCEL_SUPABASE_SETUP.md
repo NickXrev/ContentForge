@@ -29,3 +29,7 @@
 - Do not use the service key in client components. Client should import `src/lib/supabase.ts` which uses the anon key.
 
 
+
+
+
+
