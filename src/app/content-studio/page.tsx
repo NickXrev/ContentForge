@@ -11,6 +11,9 @@ import { useClientIntelligence, TrendingTopic } from '@/hooks/useClientIntellige
 interface SocialPost {
   content: string
   imageUrl?: string
+  scheduledAt?: string
+  status?: 'draft' | 'scheduled' | 'published'
+  documentId?: string
 }
 
 interface ContentPiece {
@@ -319,13 +322,35 @@ export default function ContentStudioPage() {
       // Report failures
       Object.entries(failureCounts).forEach(([platform, count]) => {
         if (count >= 2) {
-          console.error(`${platform} posts failed ${count} out of 3 attempts`)
+          console.error(`[${platform.toUpperCase()}] Posts failed ${count} out of 3 attempts`)
+          // Log the actual error messages for failed attempts
+          results.filter(r => r.platform === platform && r.error).forEach((r, idx) => {
+            console.error(`[${platform.toUpperCase()}] Failed attempt ${idx + 1}:`, r.error)
+          })
         }
       })
 
-      // If Twitter/X has no posts, show warning
-      if (socialContent.twitter.length === 0 && failureCounts['twitter'] >= 2) {
-        alert('Warning: Twitter/X posts failed to generate. Please try again or check the console for details.')
+      // If Twitter/X has no posts, show detailed warning
+      if (socialContent.twitter.length === 0) {
+        const twitterFailures = failureCounts['twitter'] || 0
+        const allTwitterResults = results.filter(r => r.platform === 'twitter')
+        const errorDetails = allTwitterResults
+          .filter(r => r.error)
+          .map((r, i) => `Attempt ${i + 1}: ${r.error || 'Empty content'}`)
+          .join('\n')
+        
+        console.error('[TWITTER/X] All generation attempts failed. Details:', {
+          totalAttempts: allTwitterResults.length,
+          failures: twitterFailures,
+          errors: errorDetails,
+          results: allTwitterResults.map(r => ({
+            hasContent: !!r.content,
+            contentLength: r.content?.length || 0,
+            error: r.error
+          }))
+        })
+        
+        alert(`Warning: Twitter/X posts failed to generate (${twitterFailures}/3 attempts failed).\n\nCheck the browser console for detailed error information.\n\nIf you see "empty content" errors, the AI may be generating content that gets filtered out during processing.`)
       }
 
       const updated = {
@@ -1008,6 +1033,10 @@ export default function ContentStudioPage() {
               {activeContent.socialContent.instagram.map((post, i) => {
                 const content = typeof post === 'string' ? post : post.content
                 const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                const scheduledAt = typeof post === 'object' ? post.scheduledAt : undefined
+                const status = typeof post === 'object' ? post.status : undefined
+                const isScheduled = status === 'scheduled' || scheduledAt !== undefined
+                
                 return (
                   <motion.div
                     key={`instagram-${i}`}
@@ -1015,13 +1044,23 @@ export default function ContentStudioPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: (activeContent.socialContent.twitter.length + activeContent.socialContent.linkedin.length + i) * 0.1 }}
                     onClick={() => setSelectedPost({ platform: 'instagram', index: i })}
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-pink-300 transition-all group"
+                    className={`bg-white rounded-xl shadow-md border p-5 cursor-pointer hover:shadow-lg transition-all group ${
+                      isScheduled ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-pink-300'
+                    }`}
                   >
-                    <div className="flex items-center space-x-2 mb-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        IG
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          IG
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">Instagram</span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">Instagram</span>
+                      {isScheduled && (
+                        <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Scheduled</span>
+                        </span>
+                      )}
                     </div>
                     {imageUrl ? (
                       <div className="mb-3 rounded-lg overflow-hidden">
