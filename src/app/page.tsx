@@ -141,7 +141,7 @@ export default function HomePage() {
           .select('created_at, platform')
           .eq('team_id', teamId),
         
-        // Upcoming scheduled posts (next 7 days)
+        // Upcoming scheduled posts (all scheduled posts, we'll filter by date in processing)
         supabase
           .from('content_documents')
           .select('id, title, platform, metadata')
@@ -149,7 +149,7 @@ export default function HomePage() {
           .eq('status', 'scheduled')
           .not('metadata->scheduled_at', 'is', null)
           .order('metadata->scheduled_at', { ascending: true })
-          .limit(5)
+          .limit(20)
       ])
 
       // Calculate weekly comparison
@@ -199,17 +199,29 @@ export default function HomePage() {
         .map((doc: any) => {
           const scheduledAt = doc.metadata?.scheduled_at
           if (!scheduledAt) return null
+          
+          // Handle both string and Date formats
           const scheduledDate = new Date(scheduledAt)
+          if (isNaN(scheduledDate.getTime())) {
+            console.warn('Invalid scheduled date:', scheduledAt)
+            return null
+          }
+          
           const daysUntil = Math.ceil((scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-          if (daysUntil < 0 || daysUntil > 7) return null
+          
+          // Show posts scheduled for today or in the future, up to 30 days ahead
+          if (daysUntil < 0 || daysUntil > 30) return null
+          
           return {
             id: doc.id,
-            title: doc.title,
+            title: doc.title || 'Untitled Post',
             platform: doc.platform || 'other',
             scheduled_at: scheduledAt
           }
         })
         .filter((post): post is UpcomingPost => post !== null)
+        .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+        .slice(0, 3) // Only show top 3 closest upcoming posts
 
       setStats({
         contentCreated: contentCount.count || 0,
@@ -223,7 +235,13 @@ export default function HomePage() {
       setRecentContent(recentContentData.data || [])
       setContentTrend(trendData)
       setPlatformBreakdown(platformData)
-      setUpcomingPosts(upcoming.slice(0, 3))
+      setUpcomingPosts(upcoming)
+      
+      // Debug logging
+      if (scheduledContentData.data && scheduledContentData.data.length > 0) {
+        console.log('Dashboard: Found scheduled posts:', scheduledContentData.data.length)
+        console.log('Dashboard: Processed upcoming posts:', upcoming.length)
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
