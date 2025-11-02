@@ -34,7 +34,7 @@ interface ContentPiece {
 type Step = 'main' | 'generating-longform' | 'longform-editor' | 'generating-social' | 'social-posts'
 
 export default function ContentStudioPage() {
-  const { clientData, trendingTopics } = useClientIntelligence()
+  const { clientData, trendingTopics, topicsLoading } = useClientIntelligence()
   const [currentStep, setCurrentStep] = useState<Step>('main')
   const [activeContent, setActiveContent] = useState<ContentPiece | null>(null)
   const [previousContent, setPreviousContent] = useState<ContentPiece[]>([])
@@ -523,27 +523,49 @@ export default function ContentStudioPage() {
                     <TrendingUp className="w-5 h-5 text-green-600" />
                     <h3 className="font-semibold">Trending Topics</h3>
                   </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {trendingTopics.map((topic, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          setSelectedTopic(topic)
-                          setPrompt(topic.topic)
-                        }}
-                        className={`w-full p-3 text-left border-2 rounded-lg transition-all ${
-                          selectedTopic?.topic === topic.topic
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="font-medium text-sm">{topic.topic}</div>
-                        {topic.content_angle && (
-                          <div className="text-xs text-gray-600 mt-1">{topic.content_angle}</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  {topicsLoading ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="relative w-12 h-12 mb-4">
+                          <Sparkles className="w-12 h-12 text-blue-600 animate-pulse" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        </div>
+                        <p className="text-sm font-medium text-gray-700">Crafting Topics...</p>
+                        <p className="text-xs text-gray-500 mt-1">Analyzing your content and profile</p>
+                      </div>
+                    </div>
+                  ) : trendingTopics.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {trendingTopics.map((topic, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setSelectedTopic(topic)
+                            setPrompt(topic.topic)
+                          }}
+                          className={`w-full p-3 text-left border-2 rounded-lg transition-all ${
+                            selectedTopic?.topic === topic.topic
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="font-medium text-sm">{topic.topic}</div>
+                          {topic.content_angle && (
+                            <div className="text-xs text-gray-600 mt-1">{topic.content_angle}</div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      <div className="text-center py-6 text-sm text-gray-500">
+                        <p>No topic suggestions available.</p>
+                        <p className="text-xs mt-1">Complete your onboarding to get personalized suggestions.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Custom Prompt */}

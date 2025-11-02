@@ -28,6 +28,7 @@ export function useClientIntelligence() {
   const [clientData, setClientData] = useState<ClientIntelligence | null>(null)
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([])
   const [loading, setLoading] = useState(true)
+  const [topicsLoading, setTopicsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchClientIntelligence = async () => {
@@ -148,6 +149,7 @@ export function useClientIntelligence() {
         .single()).data?.team_id
 
       // Fetch personalized topic suggestions based on client profile and previous content
+      setTopicsLoading(true)
       try {
         const topicsResponse = await fetch('/api/generate-topic-suggestions', {
           method: 'POST',
@@ -181,6 +183,8 @@ export function useClientIntelligence() {
       } catch (topicsError) {
         console.warn('Error fetching personalized topics:', topicsError)
         setTrendingTopics([])
+      } finally {
+        setTopicsLoading(false)
       }
     } catch (err) {
       console.error('Error fetching client intelligence:', err)
@@ -198,6 +202,7 @@ export function useClientIntelligence() {
     clientData,
     trendingTopics,
     loading,
+    topicsLoading,
     error,
     refetch: fetchClientIntelligence
   }
