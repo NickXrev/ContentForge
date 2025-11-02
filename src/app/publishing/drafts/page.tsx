@@ -233,7 +233,7 @@ export default function DraftsPage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <FileText className="w-6 h-6 text-blue-600" /> Content
+          <FileText className="w-6 h-6 text-blue-600" /> Inventory
         </h1>
         <p className="text-gray-600 mt-1">View and manage all your generated content</p>
       </div>
@@ -296,14 +296,14 @@ export default function DraftsPage() {
           <p className="text-gray-600 mb-4">
             {searchTerm || filterStatus !== 'all' || filterPlatform !== 'all'
               ? 'Try adjusting your filters'
-              : 'Generate your first piece of content in the Content Studio'}
+              : 'Generate your first piece of content in The Forge'}
           </p>
           {(!searchTerm && filterStatus === 'all' && filterPlatform === 'all') && (
             <Link
               href="/content-studio"
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Go to Content Studio
+              Go to The Forge
             </Link>
           )}
         </div>

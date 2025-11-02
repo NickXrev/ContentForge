@@ -286,7 +286,7 @@ export default function HomePage() {
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
               >
                 <Zap className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-sm font-medium text-gray-900">Content Studio</p>
+                <p className="text-sm font-medium text-gray-900">The Forge</p>
               </a>
               <a 
                 href="/editor"

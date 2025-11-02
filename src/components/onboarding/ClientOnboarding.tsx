@@ -388,13 +388,13 @@ export default function ClientOnboarding() {
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Complete!</h2>
           <p className="text-gray-600 mb-6">
-            Your client profile has been saved. You can now access smart content suggestions in the Content Studio.
+            Your client profile has been saved. You can now access smart content suggestions in The Forge.
           </p>
           <button
             onClick={() => window.location.href = '/content-studio'}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Go to Content Studio
+            Go to The Forge
           </button>
         </motion.div>
       </div>

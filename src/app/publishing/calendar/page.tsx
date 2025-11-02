@@ -462,7 +462,7 @@ export default function CalendarPage() {
                     <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">No unscheduled content</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Create content in Content Studio
+                      Create content in The Forge
                     </p>
                   </div>
                 )}

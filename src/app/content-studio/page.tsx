@@ -488,7 +488,7 @@ export default function ContentStudioPage() {
       {/* Header */}
       <div className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Content Studio</h1>
+          <h1 className="text-xl font-semibold">The Forge</h1>
           <div className="flex items-center space-x-3">
             {saving && <span className="text-sm text-gray-500">Saving...</span>}
             {currentStep !== 'main' && (
@@ -502,7 +502,7 @@ export default function ContentStudioPage() {
                 className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm flex items-center space-x-2"
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span>Back to Studio</span>
+                <span>Back to Forge</span>
               </button>
             )}
           </div>
