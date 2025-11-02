@@ -360,14 +360,22 @@ export default function ContentStudioPage() {
         })
       })
 
-      if (!response.ok) throw new Error('Failed to generate image')
-      const { imageUrl } = await response.json()
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.details || `Failed to generate image (${response.status})`)
+      }
+      
+      const data = await response.json()
+      
+      if (!data.imageUrl) {
+        throw new Error('No image URL returned from API')
+      }
       
       const updated = { ...activeContent.socialContent }
       const platformPosts = [...updated[platform as keyof typeof updated]]
       platformPosts[index] = {
         content: typeof platformPosts[index] === 'string' ? platformPosts[index] : platformPosts[index].content,
-        imageUrl: imageUrl
+        imageUrl: data.imageUrl
       }
       updated[platform as keyof typeof updated] = platformPosts as any
       
@@ -376,24 +384,39 @@ export default function ContentStudioPage() {
         socialContent: updated,
         updatedAt: new Date().toISOString()
       })
+      
+      await autoSave({
+        ...activeContent,
+        socialContent: updated,
+        updatedAt: new Date().toISOString()
+      })
     } catch (error) {
-      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Image generation error:', error)
+      alert(`Image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setGeneratingImage(null)
     }
   }
 
-  const handleSchedulePost = async (platform: string, index: number) => {
-    if (!activeContent) return
-    const post = activeContent.socialContent[platform as keyof typeof activeContent.socialContent][index]
-    const postContent = typeof post === 'string' ? post : post.content
-    const postImageUrl = typeof post === 'object' ? post.imageUrl : undefined
-    
-      const dateTimeInput = window.prompt('Enter date and time (YYYY-MM-DD HH:MM):')
-      if (!dateTimeInput) return
-      const scheduledDateTime = dateTimeInput
+  const handleSchedulePost = (platform: string, index: number) => {
+    setSchedulingPost({ platform, index })
+    const today = new Date().toISOString().split('T')[0]
+    setScheduleData({
+      date: today,
+      time: '12:00'
+    })
+  }
+
+  const handleSchedule = async () => {
+    if (!activeContent || !schedulingPost) return
 
     try {
+      const platformContent = activeContent.socialContent[schedulingPost.platform as keyof typeof activeContent.socialContent]
+      const post = platformContent[schedulingPost.index]
+      const postContent = typeof post === 'string' ? post : post.content
+      const postImageUrl = typeof post === 'object' ? post.imageUrl : undefined
+      const scheduledDateTime = new Date(`${scheduleData.date}T${scheduleData.time}`).toISOString()
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
@@ -405,20 +428,23 @@ export default function ContentStudioPage() {
 
       if (!teamData) throw new Error('No team found')
 
-      await supabase.from('content_documents').insert([{
+      const { error } = await supabase.from('content_documents').insert([{
         team_id: teamData.team_id,
-        title: `Scheduled ${platform} post`,
+        title: `Scheduled ${schedulingPost.platform} post`,
         content: postContent,
-        platform: platform,
+        platform: schedulingPost.platform,
         created_by: user.id,
         status: 'scheduled',
         metadata: {
-          scheduled_at: new Date(scheduledDateTime).toISOString(),
+          scheduled_at: scheduledDateTime,
           image_url: postImageUrl
         }
       }])
 
-      alert('Post scheduled!')
+      if (error) throw error
+
+      alert(`Post scheduled for ${scheduleData.date} at ${scheduleData.time}!`)
+      setSchedulingPost(null)
     } catch (error) {
       alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
@@ -783,9 +809,9 @@ export default function ContentStudioPage() {
                             <button
                               onClick={() => handleGenerateImage('linkedin', i)}
                               disabled={generatingImage?.platform === 'linkedin' && generatingImage?.index === i}
-                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Image
+                              {generatingImage?.platform === 'linkedin' && generatingImage?.index === i ? 'Generating...' : 'Image'}
                             </button>
                             <button
                               onClick={() => handleSchedulePost('linkedin', i)}
@@ -852,9 +878,9 @@ export default function ContentStudioPage() {
                             <button
                               onClick={() => handleGenerateImage('instagram', i)}
                               disabled={generatingImage?.platform === 'instagram' && generatingImage?.index === i}
-                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Image
+                              {generatingImage?.platform === 'instagram' && generatingImage?.index === i ? 'Generating...' : 'Image'}
                             </button>
                             <button
                               onClick={() => handleSchedulePost('instagram', i)}
@@ -873,6 +899,50 @@ export default function ContentStudioPage() {
           </div>
         )}
       </div>
+
+      {/* Schedule Modal */}
+      {schedulingPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold mb-4">Schedule Post</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={scheduleData.date}
+                  onChange={(e) => setScheduleData({ ...scheduleData, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <input
+                  type="time"
+                  value={scheduleData.time}
+                  onChange={(e) => setScheduleData({ ...scheduleData, time: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setSchedulingPost(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSchedule}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
