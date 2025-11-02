@@ -843,6 +843,12 @@ export default function ContentStudioPage() {
               
               {/* Unified Editable Preview */}
               <div className="relative">
+                <FormattingToolbar 
+                  editorRef={editorRef} 
+                  onFormat={(format) => {
+                    // Format applied, content will be updated via onInput
+                  }}
+                />
                 <div
                   ref={editorRef}
                   contentEditable
