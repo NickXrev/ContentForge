@@ -62,10 +62,11 @@ curl -X POST http://localhost:3000/api/admin/create-user \
 - **Password**: `devpassword123`
 - **Full Name**: `Developer User`
 
-### User 2: For Your Colleague (Presentation)
+### User 2: Demo User (For Testing/Presentation)
 - **Email**: `demo@contentforge.com`
-- **Password**: `demopassword123`
+- **Password**: `Demo0!`
 - **Full Name**: `Demo User`
+- **Quick Setup**: See `scripts/create-demo-user.sql` for SQL script
 
 ## What Gets Created
 
