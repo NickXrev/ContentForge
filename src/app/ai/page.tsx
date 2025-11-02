@@ -1,15 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { ContentGenerator } from '@/components/ai/ContentGenerator'
-import { ClientProfileSetup } from '@/components/ai/ClientProfileSetup'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { simpleAnalytics } from '@/lib/simple-analytics'
-import { Brain, Settings, Zap, FileText } from 'lucide-react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function AIPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to Content Studio (the new improved version)
+    router.replace('/content-studio')
+  }, [router])
+
+  // Show loading state during redirect
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
   const { user } = useAuth()
   const [clientProfile, setClientProfile] = useState(null)
   const [loading, setLoading] = useState(true)
