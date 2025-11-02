@@ -26,54 +26,61 @@ export async function POST(request: NextRequest) {
     // Try OpenRouter first (if API key is available)
     if (process.env.OPENROUTER_API_KEY) {
       try {
-        // OpenRouter supports image generation through multimodal chat completions
-        // Using Flux Pro model which supports image generation
-        const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-            'X-Title': 'ContentForge'
-          },
+        // Try openai/gpt-5-image first, then fallback to flux-pro
+        const modelsToTry = ['openai/gpt-5-image', 'black-forest-labs/flux-pro']
+        
+        for (const model of modelsToTry) {
+          const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+              'X-Title': 'ContentForge'
+            },
           body: JSON.stringify({
-            model: 'black-forest-labs/flux-pro', // High quality image generation model
-            messages: [
-              {
-                role: 'user',
-                content: imagePrompt
-              }
-            ],
-            modalities: ['image'] // Specify we want image output
+              model: model,
+              messages: [
+                {
+                  role: 'user',
+                  content: imagePrompt
+                }
+              ],
+              modalities: ['image'] // Specify we want image output
+            })
           })
-        })
 
-        if (openRouterResponse.ok) {
-          const data = await openRouterResponse.json()
-          
-          // Check for image in response - could be in different formats
-          if (data.choices?.[0]?.message?.content) {
-            const content = data.choices[0].message.content
+          if (openRouterResponse.ok) {
+            const data = await openRouterResponse.json()
             
-            // If content is an object with image URL
-            if (typeof content === 'object' && content.url) {
-              return NextResponse.json({ imageUrl: content.url, provider: 'openrouter-flux' })
+            // Check for image in response - could be in different formats
+            if (data.choices?.[0]?.message?.content) {
+              const content = data.choices[0].message.content
+              
+              // If content is an object with image URL
+              if (typeof content === 'object' && content.url) {
+                return NextResponse.json({ imageUrl: content.url, provider: `openrouter-${model}` })
+              }
+              
+              // If content is a string URL
+              if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:'))) {
+                return NextResponse.json({ imageUrl: content, provider: `openrouter-${model}` })
+              }
+              
+              // Check for image in attachments or other fields
+              if (data.choices?.[0]?.message?.image_url) {
+                return NextResponse.json({ imageUrl: data.choices[0].message.image_url, provider: `openrouter-${model}` })
+              }
             }
-            
-            // If content is a string URL
-            if (typeof content === 'string' && (content.startsWith('http') || content.startsWith('data:'))) {
-              return NextResponse.json({ imageUrl: content, provider: 'openrouter-flux' })
-            }
-            
-            // Check for image in attachments or other fields
-            if (data.choices?.[0]?.message?.image_url) {
-              return NextResponse.json({ imageUrl: data.choices[0].message.image_url, provider: 'openrouter-flux' })
-            }
+          } else if (openRouterResponse.status === 404 || openRouterResponse.status === 400) {
+            // Model not found, try next model
+            console.log(`Model ${model} not available, trying next...`)
+            continue
           }
         }
         
-        // If OpenRouter doesn't return image in expected format, try fallback
-        console.log('OpenRouter response format not recognized, trying DALL-E fallback')
+        // If all OpenRouter models failed, try DALL-E fallback
+        console.log('OpenRouter image generation not available, trying DALL-E fallback')
       } catch (openRouterError) {
         console.log('OpenRouter image generation failed, trying DALL-E fallback:', openRouterError)
       }
