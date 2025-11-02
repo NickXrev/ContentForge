@@ -913,9 +913,18 @@ export default function ContentStudioPage() {
 
         {currentStep === 'social-posts' && activeContent && (
           <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-2">Social Media Posts</h2>
-              <p className="text-gray-600">Generated from: {activeContent.title}</p>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">Social Media Posts</h2>
+                <p className="text-gray-600">Generated from: {activeContent.title}</p>
+              </div>
+              <button
+                onClick={() => setCurrentStep('longform-editor')}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back to Longform</span>
+              </button>
             </div>
 
             {/* All posts in a unified card grid - grouped by platform */}

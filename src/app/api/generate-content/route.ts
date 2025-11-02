@@ -108,6 +108,12 @@ export async function POST(request: NextRequest) {
         const temperature = parseFloat(temperatureConfig?.value || '0.7')
         const systemPrompt = systemPromptConfig?.value || 'You are a professional content creator who generates high-quality, engaging content for various social media platforms and blogs.'
 
+        // Log for Twitter/X debugging
+        if (platform === 'twitter' || platform === 'x') {
+          console.log('[X/Twitter] Generating content with prompt length:', prompt.length)
+          console.log('[X/Twitter] Prompt preview:', prompt.substring(0, 200))
+        }
+
         const response = await openRouter.generateContent({
           model: model,
           messages: [
@@ -124,7 +130,18 @@ export async function POST(request: NextRequest) {
           temperature: temperature
         })
 
+        // Log response for Twitter/X
+        if (platform === 'twitter' || platform === 'x') {
+          console.log('[X/Twitter] Raw response:', response.choices[0]?.message?.content?.substring(0, 100))
+        }
+
     let content = response.choices[0]?.message?.content || 'Failed to generate content'
+    
+    // Additional logging for Twitter/X
+    if (platform === 'twitter' || platform === 'x') {
+      console.log('[X/Twitter] Initial content length:', content.length)
+      console.log('[X/Twitter] Initial content:', content.substring(0, 100))
+    }
     
     // Clean up content (remove markdown, extra whitespace)
     content = content.trim()
@@ -138,11 +155,26 @@ export async function POST(request: NextRequest) {
       const MAX_X_CHARS = 250
       
       // Remove any leading/trailing whitespace and newlines
+      const originalContent = content
       content = content.trim()
+      
+      // Remove markdown code blocks if present
+      if (content.startsWith('```')) {
+        content = content.replace(/^```[\w]*\n?/g, '').replace(/\n?```$/g, '')
+      }
       
       // Remove markdown formatting that doesn't work well on X
       content = content.replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold
-      content = content.replace(/\*(.+?)\*/g, '$1') // Remove italic (but keep hashtags)
+      // Be careful with italic - only remove if it's not a hashtag or mention
+      content = content.replace(/\*(?!#|@)(.+?)\*/g, '$1') // Remove italic (but keep #hashtags and @mentions)
+      
+      // Remove any remaining markdown list markers at start
+      content = content.replace(/^[-*+]\s+/, '')
+      
+      // Remove extra newlines and normalize spaces
+      content = content.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
+      
+      console.log('[X/Twitter] After cleanup - length:', content.length, 'content:', content.substring(0, 100))
       
       // Try to truncate at word boundary if possible
       if (content.length > MAX_X_CHARS) {
@@ -151,7 +183,7 @@ export async function POST(request: NextRequest) {
         const lastNewline = truncated.lastIndexOf('\n')
         const cutPoint = Math.max(lastSpace, lastNewline)
         
-        if (cutPoint > MAX_X_CHARS - 20) {
+        if (cutPoint > MAX_X_CHARS - 20 && cutPoint > 0) {
           // Use word boundary if it's not too far from limit
           content = truncated.substring(0, cutPoint).trim()
         } else {
@@ -164,17 +196,19 @@ export async function POST(request: NextRequest) {
           content += '...'
         }
         
-        console.warn(`X/Twitter post exceeded ${MAX_X_CHARS} characters, truncated to ${content.length}`)
+        console.warn(`[X/Twitter] Post exceeded ${MAX_X_CHARS} characters, truncated from ${originalContent.length} to ${content.length}`)
       }
       
       // Final validation
-      if (content.length === 0) {
-        console.error('X/Twitter post generation resulted in empty content')
+      if (!content || content.length === 0 || content.trim().length === 0) {
+        console.error('[X/Twitter] Post generation resulted in empty content. Original:', originalContent.substring(0, 200))
         return NextResponse.json(
-          { error: 'Generated content was empty or invalid for X/Twitter' },
+          { error: 'Generated content was empty or invalid for X/Twitter. Please try again.' },
           { status: 500 }
         )
       }
+      
+      console.log('[X/Twitter] Final content length:', content.length)
     }
 
     return NextResponse.json({ content })
