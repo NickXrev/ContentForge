@@ -958,6 +958,10 @@ export default function ContentStudioPage() {
               {activeContent.socialContent.twitter.map((post, i) => {
                 const content = typeof post === 'string' ? post : post.content
                 const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                const scheduledAt = typeof post === 'object' ? post.scheduledAt : undefined
+                const status = typeof post === 'object' ? post.status : undefined
+                const isScheduled = status === 'scheduled' || scheduledAt !== undefined
+                
                 return (
                   <motion.div
                     key={`twitter-${i}`}
@@ -965,13 +969,23 @@ export default function ContentStudioPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
                     onClick={() => setSelectedPost({ platform: 'twitter', index: i })}
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-sky-300 transition-all group"
+                    className={`bg-white rounded-xl shadow-md border p-5 cursor-pointer hover:shadow-lg transition-all group ${
+                      isScheduled ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-sky-300'
+                    }`}
                   >
-                    <div className="flex items-center space-x-2 mb-3">
-                      <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        ✖
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          ✖
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">X (Twitter)</span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">X (Twitter)</span>
+                      {isScheduled && (
+                        <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Scheduled</span>
+                        </span>
+                      )}
                     </div>
                     {imageUrl ? (
                       <div className="mb-3 rounded-lg overflow-hidden">
@@ -997,6 +1011,10 @@ export default function ContentStudioPage() {
               {activeContent.socialContent.linkedin.map((post, i) => {
                 const content = typeof post === 'string' ? post : post.content
                 const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                const scheduledAt = typeof post === 'object' ? post.scheduledAt : undefined
+                const status = typeof post === 'object' ? post.status : undefined
+                const isScheduled = status === 'scheduled' || scheduledAt !== undefined
+                
                 return (
                   <motion.div
                     key={`linkedin-${i}`}
@@ -1004,13 +1022,23 @@ export default function ContentStudioPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: (activeContent.socialContent.twitter.length + i) * 0.1 }}
                     onClick={() => setSelectedPost({ platform: 'linkedin', index: i })}
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all group"
+                    className={`bg-white rounded-xl shadow-md border p-5 cursor-pointer hover:shadow-lg transition-all group ${
+                      isScheduled ? 'border-green-300 bg-green-50' : 'border-gray-200 hover:border-blue-500'
+                    }`}
                   >
-                    <div className="flex items-center space-x-2 mb-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                        in
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          in
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">LinkedIn</span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">LinkedIn</span>
+                      {isScheduled && (
+                        <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Scheduled</span>
+                        </span>
+                      )}
                     </div>
                     {imageUrl ? (
                       <div className="mb-3 rounded-lg overflow-hidden">
@@ -1174,6 +1202,38 @@ export default function ContentStudioPage() {
                 }
 
                 if (documentId) {
+                  // Update the post in activeContent to show scheduled status
+                  const updatedSocialContent = { ...activeContent.socialContent }
+                  const platformPosts = updatedSocialContent[selectedPost.platform as keyof typeof updatedSocialContent]
+                  if (Array.isArray(platformPosts) && platformPosts[selectedPost.index]) {
+                    if (typeof platformPosts[selectedPost.index] === 'object') {
+                      platformPosts[selectedPost.index] = {
+                        ...platformPosts[selectedPost.index],
+                        scheduledAt: scheduledDateTime,
+                        status: status as 'draft' | 'scheduled' | 'published',
+                        documentId: documentId
+                      }
+                    } else {
+                      platformPosts[selectedPost.index] = {
+                        content: platformPosts[selectedPost.index] as string,
+                        scheduledAt: scheduledDateTime,
+                        status: status as 'draft' | 'scheduled' | 'published',
+                        documentId: documentId
+                      }
+                    }
+                  }
+                  
+                  setActiveContent({
+                    ...activeContent,
+                    socialContent: updatedSocialContent
+                  })
+                  
+                  // Auto-save the updated content
+                  await autoSave({
+                    ...activeContent,
+                    socialContent: updatedSocialContent
+                  })
+                  
                   alert(`Post ${existingPosts && existingPosts.length > 0 ? 'updated and' : ''} scheduled for ${date} at ${time}! Status: ${status}`)
                   setSelectedPost(null)
                 } else {
