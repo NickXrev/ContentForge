@@ -1081,23 +1081,65 @@ export default function ContentStudioPage() {
 
                 if (!teamData) throw new Error('No team found')
 
-                const { error } = await supabase.from('content_documents').insert([{
-                  team_id: teamData.team_id,
-                  title: `Scheduled ${selectedPost.platform} post`,
-                  content: postContent,
-                  platform: selectedPost.platform,
-                  created_by: user.id,
-                  status: 'scheduled',
-                  metadata: {
-                    scheduled_at: scheduledDateTime,
-                    image_url: postImageUrl
-                  }
-                }])
+                // Check if this post already exists in the database
+                const { data: existingPosts } = await supabase
+                  .from('content_documents')
+                  .select('id, status')
+                  .eq('team_id', teamData.team_id)
+                  .eq('platform', selectedPost.platform)
+                  .eq('content', postContent)
+                  .limit(1)
 
-                if (error) throw error
+                let status = 'scheduled' // Default for new posts
+                let documentId: string | null = null
 
-                alert(`Post scheduled for ${date} at ${time}!`)
-                setSelectedPost(null)
+                if (existingPosts && existingPosts.length > 0) {
+                  // Update existing post - preserve status if already published
+                  documentId = existingPosts[0].id
+                  status = existingPosts[0].status === 'published' ? 'published' : 'scheduled'
+                  
+                  const { error: updateError } = await supabase
+                    .from('content_documents')
+                    .update({
+                      status: status,
+                      metadata: {
+                        scheduled_at: scheduledDateTime,
+                        image_url: postImageUrl
+                      },
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', documentId)
+
+                  if (updateError) throw updateError
+                } else {
+                  // Create new post
+                  const { data: newPost, error: insertError } = await supabase
+                    .from('content_documents')
+                    .insert([{
+                      team_id: teamData.team_id,
+                      title: `${selectedPost.platform.charAt(0).toUpperCase() + selectedPost.platform.slice(1)} post from: ${activeContent.title}`,
+                      content: postContent,
+                      platform: selectedPost.platform,
+                      created_by: user.id,
+                      status: 'scheduled',
+                      metadata: {
+                        scheduled_at: scheduledDateTime,
+                        image_url: postImageUrl
+                      }
+                    }])
+                    .select('id')
+                    .single()
+
+                  if (insertError) throw insertError
+                  documentId = newPost?.id || null
+                }
+
+                if (documentId) {
+                  alert(`Post ${existingPosts && existingPosts.length > 0 ? 'updated and' : ''} scheduled for ${date} at ${time}! Status: ${status}`)
+                  setSelectedPost(null)
+                } else {
+                  throw new Error('Failed to create or update post')
+                }
               } catch (error) {
                 alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
               }

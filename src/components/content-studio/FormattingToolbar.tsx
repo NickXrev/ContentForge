@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Bold, Italic, Underline, List, Heading2, Heading3, Quote, Code } from 'lucide-react'
 
 interface FormattingToolbarProps {
-  editorRef: React.RefObject<HTMLDivElement>
+  editorRef: React.RefObject<HTMLDivElement | null>
   onFormat: (format: string) => void
 }
 
