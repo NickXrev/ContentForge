@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles, TrendingUp, Lightbulb, ArrowRight, ChevronLeft, Clock, Edit3, Image as ImageIcon, X } from 'lucide-react'
 import SocialPostModal from '@/components/content-studio/SocialPostModal'
+import FormattingToolbar from '@/components/content-studio/FormattingToolbar'
 import { supabase } from '@/lib/supabase'
 import { useClientIntelligence, TrendingTopic } from '@/hooks/useClientIntelligence'
 
@@ -250,7 +251,7 @@ export default function ContentStudioPage() {
     
     try {
       const platforms = ['twitter', 'linkedin', 'instagram']
-      const allPromises: Promise<{platform: string, content: string}>[] = []
+      const allPromises: Promise<{platform: string, content: string, error?: string | null}>[] = []
       
       for (const platform of platforms) {
         for (let i = 0; i < 3; i++) {
@@ -272,9 +273,22 @@ export default function ContentStudioPage() {
                   goals: clientData?.content_goals || []
                 }
               })
-            }).then(res => res.ok ? res.json() : { content: '' })
-            .then(data => ({ platform, content: data.content || '' }))
-            .catch(() => ({ platform, content: '' }))
+            }).then(async (res) => {
+              if (!res.ok) {
+                const errorText = await res.text().catch(() => 'Unknown error')
+                console.error(`Failed to generate ${platform} post (attempt ${i + 1}):`, errorText)
+                return { platform, content: '', error: errorText }
+              }
+              const data = await res.json()
+              if (!data.content || !data.content.trim()) {
+                console.warn(`Empty content returned for ${platform} post (attempt ${i + 1})`)
+              }
+              return { platform, content: data.content || '', error: null as string | null }
+            })
+            .catch((error) => {
+              console.error(`Error generating ${platform} post (attempt ${i + 1}):`, error)
+              return { platform, content: '', error: error.message || 'Unknown error' }
+            })
           )
         }
       }
@@ -286,7 +300,14 @@ export default function ContentStudioPage() {
         instagram: []
       }
 
+      // Track failures for reporting
+      const failures: { platform: string; count: number }[] = []
+      const failureCounts: Record<string, number> = {}
+
       results.forEach(result => {
+        if (result.error) {
+          failureCounts[result.platform] = (failureCounts[result.platform] || 0) + 1
+        }
         if (result.content && result.content.trim() && result.platform in socialContent) {
           socialContent[result.platform as keyof typeof socialContent].push({
             content: result.content.trim(),
@@ -294,6 +315,18 @@ export default function ContentStudioPage() {
           })
         }
       })
+
+      // Report failures
+      Object.entries(failureCounts).forEach(([platform, count]) => {
+        if (count >= 2) {
+          console.error(`${platform} posts failed ${count} out of 3 attempts`)
+        }
+      })
+
+      // If Twitter/X has no posts, show warning
+      if (socialContent.twitter.length === 0 && failureCounts['twitter'] >= 2) {
+        alert('Warning: Twitter/X posts failed to generate. Please try again or check the console for details.')
+      }
 
       const updated = {
         ...activeContent,

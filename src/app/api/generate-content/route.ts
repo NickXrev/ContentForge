@@ -136,10 +136,44 @@ export async function POST(request: NextRequest) {
     // For X/Twitter, enforce strict character limit and truncate if needed
     if (platform === 'twitter' || platform === 'x') {
       const MAX_X_CHARS = 250
+      
+      // Remove any leading/trailing whitespace and newlines
+      content = content.trim()
+      
+      // Remove markdown formatting that doesn't work well on X
+      content = content.replace(/\*\*(.+?)\*\*/g, '$1') // Remove bold
+      content = content.replace(/\*(.+?)\*/g, '$1') // Remove italic (but keep hashtags)
+      
+      // Try to truncate at word boundary if possible
       if (content.length > MAX_X_CHARS) {
-        // Truncate and add ellipsis if needed, but try to preserve meaning
-        content = content.substring(0, MAX_X_CHARS - 3).trim() + '...'
+        const truncated = content.substring(0, MAX_X_CHARS)
+        const lastSpace = truncated.lastIndexOf(' ')
+        const lastNewline = truncated.lastIndexOf('\n')
+        const cutPoint = Math.max(lastSpace, lastNewline)
+        
+        if (cutPoint > MAX_X_CHARS - 20) {
+          // Use word boundary if it's not too far from limit
+          content = truncated.substring(0, cutPoint).trim()
+        } else {
+          // Otherwise just truncate
+          content = truncated.trim()
+        }
+        
+        // Add ellipsis only if we actually cut content
+        if (content.length < MAX_X_CHARS - 3) {
+          content += '...'
+        }
+        
         console.warn(`X/Twitter post exceeded ${MAX_X_CHARS} characters, truncated to ${content.length}`)
+      }
+      
+      // Final validation
+      if (content.length === 0) {
+        console.error('X/Twitter post generation resulted in empty content')
+        return NextResponse.json(
+          { error: 'Generated content was empty or invalid for X/Twitter' },
+          { status: 500 }
+        )
       }
     }
 

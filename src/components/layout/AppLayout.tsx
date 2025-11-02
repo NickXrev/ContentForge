@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { LoginForm } from '@/components/auth/LoginForm'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import RightSidebar from './RightSidebar'
+import { supabase } from '@/lib/supabase'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -14,6 +15,68 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, loading } = useAuth()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Preload trending topics when user logs in
+  useEffect(() => {
+    if (user && !loading) {
+      // Trigger topic generation in background
+      const preloadTopics = async () => {
+        try {
+          const { data: { user: authUser } } = await supabase.auth.getUser()
+          if (!authUser) return
+
+          // Get user's team
+          const { data: userData } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', authUser.id)
+            .single()
+
+          if (!userData) return
+
+          const { data: teamMemberData } = await supabase
+            .from('team_members')
+            .select('team_id')
+            .eq('user_id', userData.id)
+            .single()
+
+          const teamId = teamMemberData?.team_id
+
+          // Check cache first
+          const cacheKey = `topics_${teamId || userData.id}`
+          const cacheData = localStorage.getItem(cacheKey)
+          const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+
+          if (cacheData) {
+            try {
+              const cached = JSON.parse(cacheData)
+              const cacheAge = Date.now() - cached.timestamp
+              if (cacheAge < CACHE_DURATION && cached.topics && cached.topics.length > 0) {
+                // Cache is still valid, no need to regenerate
+                return
+              }
+            } catch (e) {
+              // Invalid cache, continue to generate
+            }
+          }
+
+          // Generate topics in background
+          fetch('/api/generate-topic-suggestions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: userData.id,
+              teamId: teamId
+            })
+          }).catch(err => console.warn('Background topic preload failed:', err))
+        } catch (error) {
+          console.warn('Error preloading topics:', error)
+        }
+      }
+
+      preloadTopics()
+    }
+  }, [user, loading])
 
 
   // Show loading state while checking auth
