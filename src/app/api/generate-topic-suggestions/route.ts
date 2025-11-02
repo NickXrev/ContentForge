@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       envServer.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    // Fetch client profile (onboarding data)
+    // Fetch client profile (onboardncdata)
     const { data: profileData } = await supabase
       .from('client_profiles')
       .select('*')

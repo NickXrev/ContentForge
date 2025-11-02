@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles, TrendingUp, Lightbulb, ArrowRight, ChevronLeft, Clock, Edit3, Image as ImageIcon, X } from 'lucide-react'
+import SocialPostModal from '@/components/content-studio/SocialPostModal'
 import { supabase } from '@/lib/supabase'
 import { useClientIntelligence, TrendingTopic } from '@/hooks/useClientIntelligence'
 
@@ -47,6 +48,7 @@ export default function ContentStudioPage() {
   const [editingPost, setEditingPost] = useState<{platform: string, index: number} | null>(null)
   const [schedulingPost, setSchedulingPost] = useState<{platform: string, index: number} | null>(null)
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' })
+  const [selectedPost, setSelectedPost] = useState<{platform: string, index: number} | null>(null)
 
   // Load previous content on mount
   useEffect(() => {
@@ -704,225 +706,196 @@ export default function ContentStudioPage() {
         )}
 
         {currentStep === 'social-posts' && activeContent && (
-          <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold mb-2">Social Media Posts</h2>
               <p className="text-gray-600">Generated from: {activeContent.title}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Twitter */}
-              {activeContent.socialContent.twitter.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">T</span>
+            {/* All posts in a unified card grid - grouped by platform */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Twitter Posts */}
+              {activeContent.socialContent.twitter.map((post, i) => {
+                const content = typeof post === 'string' ? post : post.content
+                const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                return (
+                  <motion.div
+                    key={`twitter-${i}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    onClick={() => setSelectedPost({ platform: 'twitter', index: i })}
+                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-blue-300 transition-all group"
+                  >
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        T
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">Twitter</span>
                     </div>
-                    <h3 className="font-semibold">Twitter</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {activeContent.socialContent.twitter.map((post, i) => {
-                      const content = typeof post === 'string' ? post : post.content
-                      const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
-                      const isEditing = editingPost?.platform === 'twitter' && editingPost?.index === i
-                      
-                      return (
-                        <div key={i} className="p-3 bg-gray-50 rounded-lg text-sm">
-                          {imageUrl && (
-                            <img src={imageUrl} alt="" className="w-full h-32 object-cover rounded mb-2" />
-                          )}
-                          {isEditing ? (
-                            <textarea
-                              value={content}
-                              onChange={(e) => {
-                                const updated = { ...activeContent }
-                                const posts = [...updated.socialContent.twitter]
-                                posts[i] = { content: e.target.value, imageUrl: imageUrl }
-                                updated.socialContent.twitter = posts
-                                updated.updatedAt = new Date().toISOString()
-                                setActiveContent(updated)
-                              }}
-                              onBlur={() => {
-                                handleUpdateSocialPost('twitter', i, content)
-                                setEditingPost(null)
-                              }}
-                              className="w-full p-2 border rounded text-xs"
-                              rows={3}
-                              autoFocus
-                            />
-                          ) : (
-                            <div 
-                              onClick={() => setEditingPost({ platform: 'twitter', index: i })}
-                              className="mb-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
-                            >
-                              {content}
-                            </div>
-                          )}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleGenerateImage('twitter', i)}
-                              disabled={generatingImage?.platform === 'twitter' && generatingImage?.index === i}
-                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {generatingImage?.platform === 'twitter' && generatingImage?.index === i ? 'Generating...' : 'Image'}
-                            </button>
-                            <button
-                              onClick={() => handleSchedulePost('twitter', i)}
-                              className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                            >
-                              Schedule
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+                    {imageUrl ? (
+                      <div className="mb-3 rounded-lg overflow-hidden">
+                        <img src={imageUrl} alt="" className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    ) : (
+                      <div className="mb-3 h-40 bg-gradient-to-br from-sky-50 to-blue-50 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-sky-300 opacity-50" />
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-700 line-clamp-3 mb-3">{content}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{content.length} chars</span>
+                      <span className={`${content.length > 280 ? 'text-red-500' : ''}`}>
+                        {280 - content.length} remaining
+                      </span>
+                    </div>
+                  </motion.div>
+                )
+              })}
 
-              {/* LinkedIn */}
-              {activeContent.socialContent.linkedin.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">in</span>
+              {/* LinkedIn Posts */}
+              {activeContent.socialContent.linkedin.map((post, i) => {
+                const content = typeof post === 'string' ? post : post.content
+                const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                return (
+                  <motion.div
+                    key={`linkedin-${i}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (activeContent.socialContent.twitter.length + i) * 0.1 }}
+                    onClick={() => setSelectedPost({ platform: 'linkedin', index: i })}
+                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all group"
+                  >
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        in
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">LinkedIn</span>
                     </div>
-                    <h3 className="font-semibold">LinkedIn</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {activeContent.socialContent.linkedin.map((post, i) => {
-                      const content = typeof post === 'string' ? post : post.content
-                      const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
-                      const isEditing = editingPost?.platform === 'linkedin' && editingPost?.index === i
-                      
-                      return (
-                        <div key={i} className="p-3 bg-gray-50 rounded-lg text-sm">
-                          {imageUrl && (
-                            <img src={imageUrl} alt="" className="w-full h-32 object-cover rounded mb-2" />
-                          )}
-                          {isEditing ? (
-                            <textarea
-                              value={content}
-                              onChange={(e) => {
-                                const updated = { ...activeContent }
-                                const posts = [...updated.socialContent.linkedin]
-                                posts[i] = { content: e.target.value, imageUrl: imageUrl }
-                                updated.socialContent.linkedin = posts
-                                updated.updatedAt = new Date().toISOString()
-                                setActiveContent(updated)
-                              }}
-                              onBlur={() => {
-                                handleUpdateSocialPost('linkedin', i, content)
-                                setEditingPost(null)
-                              }}
-                              className="w-full p-2 border rounded text-xs"
-                              rows={4}
-                              autoFocus
-                            />
-                          ) : (
-                            <div 
-                              onClick={() => setEditingPost({ platform: 'linkedin', index: i })}
-                              className="mb-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
-                            >
-                              {content}
-                            </div>
-                          )}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleGenerateImage('linkedin', i)}
-                              disabled={generatingImage?.platform === 'linkedin' && generatingImage?.index === i}
-                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {generatingImage?.platform === 'linkedin' && generatingImage?.index === i ? 'Generating...' : 'Image'}
-                            </button>
-                            <button
-                              onClick={() => handleSchedulePost('linkedin', i)}
-                              className="flex-1 px-2 py-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-800"
-                            >
-                              Schedule
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+                    {imageUrl ? (
+                      <div className="mb-3 rounded-lg overflow-hidden">
+                        <img src={imageUrl} alt="" className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    ) : (
+                      <div className="mb-3 h-40 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-blue-300 opacity-50" />
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-700 line-clamp-4 mb-3">{content}</p>
+                    <div className="text-xs text-gray-500">
+                      {content.length} characters
+                    </div>
+                  </motion.div>
+                )
+              })}
 
-              {/* Instagram */}
-              {activeContent.socialContent.instagram.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">IG</span>
+              {/* Instagram Posts */}
+              {activeContent.socialContent.instagram.map((post, i) => {
+                const content = typeof post === 'string' ? post : post.content
+                const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                return (
+                  <motion.div
+                    key={`instagram-${i}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (activeContent.socialContent.twitter.length + activeContent.socialContent.linkedin.length + i) * 0.1 }}
+                    onClick={() => setSelectedPost({ platform: 'instagram', index: i })}
+                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 cursor-pointer hover:shadow-lg hover:border-pink-300 transition-all group"
+                  >
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                        IG
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">Instagram</span>
                     </div>
-                    <h3 className="font-semibold">Instagram</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {activeContent.socialContent.instagram.map((post, i) => {
-                      const content = typeof post === 'string' ? post : post.content
-                      const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
-                      const isEditing = editingPost?.platform === 'instagram' && editingPost?.index === i
-                      
-                      return (
-                        <div key={i} className="p-3 bg-gray-50 rounded-lg text-sm">
-                          {imageUrl && (
-                            <img src={imageUrl} alt="" className="w-full h-32 object-cover rounded mb-2" />
-                          )}
-                          {isEditing ? (
-                            <textarea
-                              value={content}
-                              onChange={(e) => {
-                                const updated = { ...activeContent }
-                                const posts = [...updated.socialContent.instagram]
-                                posts[i] = { content: e.target.value, imageUrl: imageUrl }
-                                updated.socialContent.instagram = posts
-                                updated.updatedAt = new Date().toISOString()
-                                setActiveContent(updated)
-                              }}
-                              onBlur={() => {
-                                handleUpdateSocialPost('instagram', i, content)
-                                setEditingPost(null)
-                              }}
-                              className="w-full p-2 border rounded text-xs"
-                              rows={4}
-                              autoFocus
-                            />
-                          ) : (
-                            <div 
-                              onClick={() => setEditingPost({ platform: 'instagram', index: i })}
-                              className="mb-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
-                            >
-                              {content}
-                            </div>
-                          )}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleGenerateImage('instagram', i)}
-                              disabled={generatingImage?.platform === 'instagram' && generatingImage?.index === i}
-                              className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {generatingImage?.platform === 'instagram' && generatingImage?.index === i ? 'Generating...' : 'Image'}
-                            </button>
-                            <button
-                              onClick={() => handleSchedulePost('instagram', i)}
-                              className="flex-1 px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded hover:from-purple-600 hover:to-pink-600"
-                            >
-                              Schedule
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+                    {imageUrl ? (
+                      <div className="mb-3 rounded-lg overflow-hidden">
+                        <img src={imageUrl} alt="" className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    ) : (
+                      <div className="mb-3 h-40 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-pink-300 opacity-50" />
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-700 line-clamp-4 mb-3">{content}</p>
+                    <div className="text-xs text-gray-500">
+                      {content.length} characters
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
           </div>
         )}
       </div>
 
-      {/* Schedule Modal */}
+      {/* Social Post Modal */}
+      {selectedPost && activeContent && (() => {
+        const platformContent = activeContent.socialContent[selectedPost.platform as keyof typeof activeContent.socialContent]
+        const post = platformContent[selectedPost.index]
+        const postContent = typeof post === 'string' ? post : post.content
+        const postImageUrl = typeof post === 'object' ? post.imageUrl : undefined
+        
+        return (
+          <SocialPostModal
+            isOpen={selectedPost !== null}
+            onClose={() => setSelectedPost(null)}
+            post={{ content: postContent, imageUrl: postImageUrl }}
+            platform={selectedPost.platform}
+            onEdit={(newContent) => {
+              handleUpdateSocialPost(selectedPost.platform, selectedPost.index, newContent)
+            }}
+            onSchedule={async (date, time) => {
+              if (!activeContent) return
+              
+              const platformContent = activeContent.socialContent[selectedPost.platform as keyof typeof activeContent.socialContent]
+              const post = platformContent[selectedPost.index]
+              const postContent = typeof post === 'string' ? post : post.content
+              const postImageUrl = typeof post === 'object' ? post.imageUrl : undefined
+              const scheduledDateTime = new Date(`${date}T${time}`).toISOString()
+
+              try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) throw new Error('Not authenticated')
+
+                const { data: teamData } = await supabase
+                  .from('team_members')
+                  .select('team_id')
+                  .eq('user_id', user.id)
+                  .single()
+
+                if (!teamData) throw new Error('No team found')
+
+                const { error } = await supabase.from('content_documents').insert([{
+                  team_id: teamData.team_id,
+                  title: `Scheduled ${selectedPost.platform} post`,
+                  content: postContent,
+                  platform: selectedPost.platform,
+                  created_by: user.id,
+                  status: 'scheduled',
+                  metadata: {
+                    scheduled_at: scheduledDateTime,
+                    image_url: postImageUrl
+                  }
+                }])
+
+                if (error) throw error
+
+                alert(`Post scheduled for ${date} at ${time}!`)
+                setSelectedPost(null)
+              } catch (error) {
+                alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+              }
+            }}
+            onGenerateImage={() => {
+              handleGenerateImage(selectedPost.platform, selectedPost.index)
+            }}
+            isGeneratingImage={generatingImage?.platform === selectedPost.platform && generatingImage?.index === selectedPost.index}
+          />
+        )
+      })()}
+
+      {/* Schedule Modal (keep for backward compatibility) */}
       {schedulingPost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
