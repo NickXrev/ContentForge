@@ -148,7 +148,59 @@ export function useClientIntelligence() {
         .eq('user_id', userData.id)
         .single()).data?.team_id
 
-      // Fetch personalized topic suggestions based on client profile and previous content
+      // Fetch personalized topic suggestions with caching
+      const cacheKey = `topics_${finalTeamId || userData.id}`
+      const cacheData = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null
+      const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+
+      if (cacheData) {
+        try {
+          const cached = JSON.parse(cacheData)
+          const cacheAge = Date.now() - cached.timestamp
+          if (cacheAge < CACHE_DURATION && cached.topics && cached.topics.length > 0) {
+            // Use cached topics, but still refresh in background
+            setTrendingTopics(cached.topics)
+            
+            // Refresh in background without blocking
+            fetch('/api/generate-topic-suggestions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: userData.id,
+                teamId: finalTeamId
+              })
+            })
+              .then(res => res.ok ? res.json() : null)
+              .then(data => {
+                if (data?.topics && Array.isArray(data.topics) && data.topics.length > 0) {
+                  const dedupe = (items: TrendingTopic[]): TrendingTopic[] => {
+                    const map = new Map<string, TrendingTopic>()
+                    for (const item of items) {
+                      const key = item.topic.trim().toLowerCase()
+                      if (!map.has(key)) map.set(key, item)
+                    }
+                    return Array.from(map.values())
+                  }
+                  const topics = dedupe(data.topics)
+                  setTrendingTopics(topics)
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                      topics,
+                      timestamp: Date.now()
+                    }))
+                  }
+                }
+              })
+              .catch(err => console.warn('Background topic refresh failed:', err))
+            
+            return // Exit early, using cached data
+          }
+        } catch (e) {
+          console.warn('Failed to parse cached topics:', e)
+        }
+      }
+
+      // No valid cache, generate new topics
       setTopicsLoading(true)
       try {
         const topicsResponse = await fetch('/api/generate-topic-suggestions', {
@@ -171,7 +223,16 @@ export function useClientIntelligence() {
               }
               return Array.from(map.values())
             }
-            setTrendingTopics(dedupe(topicsData.topics))
+            const topics = dedupe(topicsData.topics)
+            setTrendingTopics(topics)
+            
+            // Cache the results
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(cacheKey, JSON.stringify({
+                topics,
+                timestamp: Date.now()
+              }))
+            }
           } else {
             console.warn('Invalid topics response format')
             setTrendingTopics([])
