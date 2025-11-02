@@ -1214,8 +1214,11 @@ export default function ContentStudioPage() {
                         documentId: documentId
                       }
                     } else {
+                      const existingContent = typeof platformPosts[selectedPost.index] === 'string' 
+                        ? platformPosts[selectedPost.index] 
+                        : (platformPosts[selectedPost.index] as SocialPost).content
                       platformPosts[selectedPost.index] = {
-                        content: platformPosts[selectedPost.index] as string,
+                        content: existingContent as string,
                         scheduledAt: scheduledDateTime,
                         status: status as 'draft' | 'scheduled' | 'published',
                         documentId: documentId
