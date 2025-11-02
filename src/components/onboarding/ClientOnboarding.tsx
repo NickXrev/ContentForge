@@ -368,10 +368,10 @@ export default function ClientOnboarding() {
     } catch (error) {
       console.error('Error saving client profile:', {
         error,
-        message: error.message,
-        stack: error.stack
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       })
-      alert(`Error saving profile: ${error.message || 'Unknown error'}`)
+      alert(`Error saving profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
