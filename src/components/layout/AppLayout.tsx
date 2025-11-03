@@ -113,13 +113,25 @@ export default function AppLayout({ children }: AppLayoutProps) {
       try {
         if (!user || loading || enforced) return
         const isOnOnboarding = typeof window !== 'undefined' && window.location.pathname.startsWith('/onboarding')
-        if (isOnOnboarding) return
+        if (isOnOnboarding) {
+          setEnforced(true)
+          return
+        }
+
+        // Get public.users id (teams.owner_id references public.users, not auth.users)
+        const { data: publicUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        const userId = publicUser?.id || user.id
 
         // 1) Ensure team exists (owned or membership)
         const { data: member } = await supabase
           .from('team_members')
           .select('team_id')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .maybeSingle()
 
         let teamId = member?.team_id as string | null
@@ -129,7 +141,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           const { data: owned } = await supabase
             .from('teams')
             .select('id')
-            .eq('owner_id', user.id)
+            .eq('owner_id', userId)
             .maybeSingle()
           teamId = owned?.id || null
         }
@@ -140,7 +152,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           const teamName = `${(user.user_metadata?.full_name || localPart)}'s Team`
           const { data: createdTeam, error: teamErr } = await supabase
             .from('teams')
-            .insert({ name: teamName, description: 'Auto-created team', owner_id: user.id })
+            .insert({ name: teamName, description: 'Auto-created team', owner_id: userId })
             .select('id')
             .single()
           if (!teamErr && createdTeam?.id) {
@@ -148,23 +160,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
             // Ensure membership
             await supabase
               .from('team_members')
-              .upsert({ team_id: teamId, user_id: user.id, role: 'admin' }, { onConflict: 'team_id,user_id' })
+              .upsert({ team_id: teamId, user_id: userId, role: 'admin' }, { onConflict: 'team_id,user_id' })
           }
         } else {
           // Ensure membership exists
           await supabase
             .from('team_members')
-            .upsert({ team_id: teamId, user_id: user.id, role: 'admin' }, { onConflict: 'team_id,user_id' })
+            .upsert({ team_id: teamId, user_id: userId, role: 'admin' }, { onConflict: 'team_id,user_id' })
         }
 
         // 2) Enforce onboarding: if no client_profiles for this team, redirect
         if (teamId) {
-          const { count } = await supabase
+          const { count, error: profileError } = await supabase
             .from('client_profiles')
             .select('id', { count: 'exact', head: true })
             .eq('team_id', teamId)
 
-          if ((count || 0) === 0) {
+          if (profileError) {
+            console.error('Error checking client profiles:', profileError)
+            // Don't redirect on error - assume profile exists to avoid blocking users
+          } else if ((count || 0) === 0) {
             setEnforced(true)
             router.push('/onboarding')
             return
@@ -173,7 +188,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
         setEnforced(true)
       } catch (e) {
-        console.warn('Onboarding enforcement failed:', e)
+        console.error('Onboarding enforcement error:', e)
+        // On error, don't block - set enforced to true so we don't loop
+        setEnforced(true)
       }
     }
     run()
