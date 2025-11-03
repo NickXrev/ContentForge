@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Menu, Bell, Search, HelpCircle, User } from 'lucide-react'
+import { useAuth } from '@/components/auth/AuthProvider'
 
 interface HeaderProps {
   user: any
@@ -9,6 +10,7 @@ interface HeaderProps {
 }
 
 export default function Header({ user, onSidebarToggle }: HeaderProps) {
+  const { signOut } = useAuth()
   const userInitials = user?.user_metadata?.full_name 
     ? user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('')
     : user?.email?.charAt(0).toUpperCase() || 'U'
@@ -73,6 +75,16 @@ export default function Header({ user, onSidebarToggle }: HeaderProps) {
 
             <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
               Upgrade Plan
+            </button>
+
+            <button
+              onClick={async () => {
+                try { await signOut() } catch {}
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+              title="Sign out"
+            >
+              Sign out
             </button>
           </div>
         </div>
