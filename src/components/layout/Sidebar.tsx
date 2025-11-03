@@ -121,7 +121,7 @@ const menuItems: MenuItem[] = [
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['forge', 'publishing'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['create', 'publishing'])
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems(prev => 
