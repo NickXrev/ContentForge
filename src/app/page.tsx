@@ -212,17 +212,21 @@ export default function HomePage() {
         return docDate >= lastWeekStart && docDate < thisWeekStart
       }).length
 
-      // Generate content trend (last 7 days)
+      // Generate content trend (last 7 days) using local day boundaries to avoid TZ mismatches
       const trendData: ContentTrend[] = []
       for (let i = 6; i >= 0; i--) {
-        const date = new Date(today)
-        date.setDate(today.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
+        const day = new Date(today)
+        day.setDate(today.getDate() - i)
+        const startOfDay = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0)
+        const endOfDay = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999)
+
         const count = allContent.filter((doc: any) => {
-          return doc.created_at?.startsWith(dateStr)
+          const ts = new Date(doc.created_at)
+          return ts >= startOfDay && ts <= endOfDay
         }).length
+
         trendData.push({
-          date: dateStr,
+          date: startOfDay.toISOString().split('T')[0],
           count
         })
       }
