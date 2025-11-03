@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { openRouter } from '@/lib/openrouter'
 
 function createContentPrompt(topic: string, platform: string, tone: string, clientProfile: any, longFormContent?: string): string {
-  const { name, industry, target_audience, brand_voice, competitors, goals } = clientProfile || {}
+  const { name, industry, target_audience, brand_voice, observed_voice, competitors, goals } = clientProfile || {}
   
   let prompt = `Create ${platform} content about: ${topic}\n\n`
   
@@ -14,7 +14,8 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
   if (name) prompt += `Client: ${name}\n`
   if (industry) prompt += `Industry: ${industry}\n`
   if (target_audience) prompt += `Target Audience: ${target_audience}\n`
-  if (brand_voice) prompt += `Brand Voice: ${brand_voice}\n`
+  if (brand_voice) prompt += `Brand Voice (declared): ${brand_voice}\n`
+  if (observed_voice) prompt += `Observed Voice (derived from previous content): ${observed_voice}\n`
   if (competitors && competitors.length > 0) prompt += `Competitors: ${competitors.join(', ')}\n`
   if (goals && goals.length > 0) prompt += `Business Goals: ${goals.join(', ')}\n`
   

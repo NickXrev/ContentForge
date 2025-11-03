@@ -206,6 +206,7 @@ export default function ContentStudioPage() {
             industry: clientData?.industry,
             target_audience: clientData?.target_audience,
             brand_voice: clientData?.brand_tone,
+            observed_voice: clientData?.derived_brand_voice?.summary,
             competitors: [],
             goals: clientData?.content_goals || []
           }
@@ -272,6 +273,7 @@ export default function ContentStudioPage() {
                   industry: clientData?.industry,
                   target_audience: clientData?.target_audience,
                   brand_voice: clientData?.brand_tone,
+                  observed_voice: clientData?.derived_brand_voice?.summary,
                   competitors: [],
                   goals: clientData?.content_goals || []
                 }

@@ -9,6 +9,13 @@ export interface ClientIntelligence {
   business_type: string
   target_audience: string
   brand_tone: string
+  derived_brand_voice?: {
+    summary?: string
+    tone_adjectives?: string[]
+    style_notes?: string[]
+    platform_variations?: any
+    metrics?: any
+  } | null
   content_goals: string[]
   key_services: string[]
   unique_value_prop: string
@@ -133,6 +140,7 @@ export function useClientIntelligence() {
           business_type: '', // Not stored in current schema
           target_audience: profileData.target_audience || '',
           brand_tone: profileData.brand_voice || 'professional',
+          derived_brand_voice: profileData.derived_brand_voice || null,
           content_goals: profileData.goals || [],
           key_services: [], // Not stored in current schema
           unique_value_prop: '', // Not stored in current schema
