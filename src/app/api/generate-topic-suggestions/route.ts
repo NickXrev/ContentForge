@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       envServer.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    // Fetch client profile (onboardncdata)
+    // Fetch client profile (onboarding data)
     const { data: profileData } = await supabase
       .from('client_profiles')
       .select('*')
@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
+
+    // If no profile exists, do not generate random topics
+    if (!profileData) {
+      return NextResponse.json({ topics: [], message: 'No client profile found. Complete onboarding to get tailored topics.' })
+    }
 
     // Fetch previous content (last 20 pieces)
     const { data: previousContent } = await supabase
@@ -71,7 +76,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the AI prompt
-    let prompt = `Generate 8-12 relevant content topic suggestions for this client based on their profile and previous content.`
+    const today = new Date()
+    const yyyy = today.getFullYear()
+    const mm = String(today.getMonth() + 1).padStart(2, '0')
+    const dd = String(today.getDate()).padStart(2, '0')
+    const isoDate = `${yyyy}-${mm}-${dd}`
+    let prompt = `Generate 8-12 relevant content topic suggestions for this client based on their profile and previous content.
+Current date: ${isoDate}. Do not propose topics referencing past years (e.g., avoid 2023/2024 if current year is ${yyyy}). Prefer evergreen or ${yyyy}-${yyyy + 1} relevant angles.`
 
     if (clientContext.length > 0) {
       prompt += `\n\nClient Profile:\n${clientContext.join('\n')}`
@@ -143,17 +154,26 @@ export async function POST(request: NextRequest) {
       topics = []
     }
 
-    // Validate and format topics
+    // Validate and format topics (and filter out outdated years)
+    const currentYear = new Date().getFullYear()
+    const yearRegex = /(19|20)\d{2}/g
     const formattedTopics = topics
       .filter((t: any) => t && typeof t === 'object' && t.topic)
-      .map((t: any) => ({
-        topic: String(t.topic || '').trim(),
+      .map((t: any) => {
+        const topicText = String(t.topic || '').trim()
+        return {
+          topic: topicText,
         trending_score: typeof t.trending_score === 'number' ? t.trending_score : 85,
         keywords: Array.isArray(t.keywords) ? t.keywords : [],
         content_angle: String(t.content_angle || '').trim(),
         target_audience: String(t.target_audience || '').trim()
-      }))
-      .filter((t: any) => t.topic.length > 0)
+        }
+      })
+      .filter((t: any) => {
+        if (!t.topic || t.topic.length === 0) return false
+        const years = t.topic.match(yearRegex) || []
+        return years.every((y: string) => Number(y) >= currentYear)
+      })
       .slice(0, 12) // Limit to 12 topics
 
     // If we got good results, return them

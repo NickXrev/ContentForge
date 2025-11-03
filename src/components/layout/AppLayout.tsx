@@ -18,6 +18,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const router = useRouter()
   const [onboardingMode, setOnboardingMode] = useState<string | null>(null)
+  const [enforced, setEnforced] = useState(false)
 
   // Preload trending topics when user logs in
   useEffect(() => {
@@ -63,15 +64,24 @@ export default function AppLayout({ children }: AppLayoutProps) {
             }
           }
 
-          // Generate topics in background
-          fetch('/api/generate-topic-suggestions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: userData.id,
-              teamId: teamId
-            })
-          }).catch(err => console.warn('Background topic preload failed:', err))
+          // Only preload topics if client profile exists to avoid random/outdated suggestions
+          if (teamId) {
+            const { count } = await supabase
+              .from('client_profiles')
+              .select('id', { count: 'exact', head: true })
+              .eq('team_id', teamId)
+
+            if ((count || 0) > 0) {
+              fetch('/api/generate-topic-suggestions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: userData.id,
+                  teamId: teamId
+                })
+              }).catch(err => console.warn('Background topic preload failed:', err))
+            }
+          }
         } catch (error) {
           console.warn('Error preloading topics:', error)
         }
@@ -96,6 +106,78 @@ export default function AppLayout({ children }: AppLayoutProps) {
     }
     if (user && !loading) loadFlags()
   }, [user, loading])
+
+  // Enforce: ensure team exists and redirect to onboarding if no client profile
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!user || loading || enforced) return
+        const isOnOnboarding = typeof window !== 'undefined' && window.location.pathname.startsWith('/onboarding')
+        if (isOnOnboarding) return
+
+        // 1) Ensure team exists (owned or membership)
+        const { data: member } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        let teamId = member?.team_id as string | null
+
+        if (!teamId) {
+          // Try owned team first
+          const { data: owned } = await supabase
+            .from('teams')
+            .select('id')
+            .eq('owner_id', user.id)
+            .maybeSingle()
+          teamId = owned?.id || null
+        }
+
+        if (!teamId) {
+          // Create personal team and membership
+          const localPart = (user.email || 'user').split('@')[0]
+          const teamName = `${(user.user_metadata?.full_name || localPart)}'s Team`
+          const { data: createdTeam, error: teamErr } = await supabase
+            .from('teams')
+            .insert({ name: teamName, description: 'Auto-created team', owner_id: user.id })
+            .select('id')
+            .single()
+          if (!teamErr && createdTeam?.id) {
+            teamId = createdTeam.id
+            // Ensure membership
+            await supabase
+              .from('team_members')
+              .upsert({ team_id: teamId, user_id: user.id, role: 'admin' }, { onConflict: 'team_id,user_id' })
+          }
+        } else {
+          // Ensure membership exists
+          await supabase
+            .from('team_members')
+            .upsert({ team_id: teamId, user_id: user.id, role: 'admin' }, { onConflict: 'team_id,user_id' })
+        }
+
+        // 2) Enforce onboarding: if no client_profiles for this team, redirect
+        if (teamId) {
+          const { count } = await supabase
+            .from('client_profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('team_id', teamId)
+
+          if ((count || 0) === 0) {
+            setEnforced(true)
+            router.push('/onboarding')
+            return
+          }
+        }
+
+        setEnforced(true)
+      } catch (e) {
+        console.warn('Onboarding enforcement failed:', e)
+      }
+    }
+    run()
+  }, [user, loading, router, enforced])
 
   // VIP-like onboarding prompt using user flag (onboarding_mode='always')
   useEffect(() => {
