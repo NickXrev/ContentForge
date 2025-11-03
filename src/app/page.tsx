@@ -60,8 +60,51 @@ export default function HomePage() {
   const [statsLoading, setStatsLoading] = useState(true)
 
   useEffect(() => {
-    if (user) {
-      loadDashboardData()
+    if (!user) return
+
+    loadDashboardData()
+
+    // Realtime updates: refresh dashboard when team content changes
+    let channel: ReturnType<typeof supabase['channel']> | null = null
+    const setupRealtime = async () => {
+      try {
+        const { data: teamMemberData } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .single()
+        const teamId = teamMemberData?.team_id
+        if (!teamId) return
+
+        channel = supabase
+          .channel(`dashboard-content-${teamId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'content_documents',
+              filter: `team_id=eq.${teamId}`,
+            },
+            () => {
+              // Debounce slighty to batch rapid events
+              setTimeout(() => loadDashboardData(), 150)
+            }
+          )
+          .subscribe()
+      } catch (e) {
+        console.warn('Realtime setup failed:', e)
+      }
+    }
+
+    setupRealtime()
+
+    return () => {
+      try {
+        if (channel) {
+          supabase.removeChannel(channel)
+        }
+      } catch {}
     }
   }, [user])
 
