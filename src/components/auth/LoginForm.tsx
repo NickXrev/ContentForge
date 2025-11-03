@@ -194,6 +194,26 @@ export function LoginForm() {
             </svg>
             <span className="font-medium">Continue with Google</span>
           </button>
+
+          {/* Additional providers (placeholders) */}
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            {[
+              { id: 'github', label: 'GitHub' },
+              { id: 'microsoft', label: 'Microsoft' },
+              { id: 'apple', label: 'Apple' },
+              { id: 'linkedin', label: 'LinkedIn' },
+            ].map(p => (
+              <button
+                key={p.id}
+                type="button"
+                disabled
+                title="Configure in Supabase → Auth → Providers to enable"
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="mt-6 text-center">
