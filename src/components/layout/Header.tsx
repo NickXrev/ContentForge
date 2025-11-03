@@ -3,7 +3,8 @@
 import React from 'react'
 import { Menu, Bell, Search, HelpCircle, User } from 'lucide-react'
 import Link from 'next/link'
-import { isVip } from '@/lib/utils'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/auth/AuthProvider'
 
 interface HeaderProps {
@@ -13,6 +14,22 @@ interface HeaderProps {
 
 export default function Header({ user, onSidebarToggle }: HeaderProps) {
   const { signOut } = useAuth()
+  const [canRerun, setCanRerun] = useState(false)
+
+  useEffect(() => {
+    const loadFlags = async () => {
+      try {
+        if (!user?.id) return
+        const { data } = await supabase
+          .from('users')
+          .select('can_rerun_onboarding')
+          .eq('id', user.id)
+          .maybeSingle()
+        setCanRerun(!!data?.can_rerun_onboarding)
+      } catch {}
+    }
+    loadFlags()
+  }, [user?.id])
   const userInitials = user?.user_metadata?.full_name 
     ? user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('')
     : user?.email?.charAt(0).toUpperCase() || 'U'
@@ -79,7 +96,7 @@ export default function Header({ user, onSidebarToggle }: HeaderProps) {
               Upgrade Plan
             </button>
 
-            {isVip(user?.id) && (
+            {canRerun && (
               <Link href="/onboarding?force=1" className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
                 Re-run Onboarding
               </Link>

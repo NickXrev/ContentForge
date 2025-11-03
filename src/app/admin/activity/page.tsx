@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { isVip, formatDateTime, truncateText } from '@/lib/utils'
+import { formatDateTime, truncateText } from '@/lib/utils'
 
 interface ActivityItem {
   id?: string
@@ -16,7 +16,7 @@ interface ActivityItem {
 
 export default function AdminActivityPage() {
   const { user, loading } = useAuth()
-  const [vipId, setVipId] = useState<string | null>(process.env.NEXT_PUBLIC_VIP_USER_ID || null)
+  const [vipId, setVipId] = useState<string | null>(null)
   const [events, setEvents] = useState<ActivityItem[]>([])
   const [subscribed, setSubscribed] = useState(false)
 
@@ -28,7 +28,14 @@ export default function AdminActivityPage() {
 
     const fetchInitial = async () => {
       try {
-        const vip = process.env.NEXT_PUBLIC_VIP_USER_ID
+        const { data: vipUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('is_vip', true)
+          .limit(1)
+          .maybeSingle()
+        const vip = vipUser?.id
+        setVipId(vip || null)
         if (!vip) return
         const { data } = await supabase
           .from('user_activity')
@@ -43,22 +50,37 @@ export default function AdminActivityPage() {
   }, [user, loading])
 
   useEffect(() => {
-    const vip = process.env.NEXT_PUBLIC_VIP_USER_ID
-    if (!vip || subscribed) return
+    const setup = async () => {
+      if (subscribed) return null
+      const { data: vipUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('is_vip', true)
+        .limit(1)
+        .maybeSingle()
+      const vip = vipUser?.id
+      if (!vip) return null
 
-    const channel = supabase
-      .channel(`vip-activity-${vip}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_activity', filter: `user_id=eq.${vip}` }, (payload: any) => {
-        if (payload?.new) {
-          setEvents(prev => [payload.new as ActivityItem, ...prev].slice(0, 100))
-        }
-      })
-      .subscribe()
+      const channel = supabase
+        .channel(`vip-activity-${vip}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_activity', filter: `user_id=eq.${vip}` }, (payload: any) => {
+          if (payload?.new) {
+            setEvents(prev => [payload.new as ActivityItem, ...prev].slice(0, 100))
+          }
+        })
+        .subscribe()
 
-    setSubscribed(true)
+      setSubscribed(true)
+      return channel
+    }
+
+    let chan: any
+    setup().then(c => { chan = c })
     return () => {
-      try { supabase.removeChannel(channel) } catch {}
-      setSubscribed(false)
+      if (chan) {
+        try { supabase.removeChannel(chan) } catch {}
+        setSubscribed(false)
+      }
     }
   }, [subscribed])
 

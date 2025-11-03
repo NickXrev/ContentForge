@@ -7,7 +7,6 @@ import Sidebar from './Sidebar'
 import Header from './Header'
 import RightSidebar from './RightSidebar'
 import { supabase } from '@/lib/supabase'
-import { isVip } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface AppLayoutProps {
@@ -18,6 +17,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user, loading } = useAuth()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const router = useRouter()
+  const [onboardingMode, setOnboardingMode] = useState<string | null>(null)
 
   // Preload trending topics when user logs in
   useEffect(() => {
@@ -81,10 +81,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
     }
   }, [user, loading])
 
-  // VIP-only onboarding prompt with snooze
+  // Load user flags for onboarding
+  useEffect(() => {
+    const loadFlags = async () => {
+      try {
+        if (!user?.id) return
+        const { data } = await supabase
+          .from('users')
+          .select('onboarding_mode')
+          .eq('id', user.id)
+          .maybeSingle()
+        setOnboardingMode((data as any)?.onboarding_mode || null)
+      } catch {}
+    }
+    if (user && !loading) loadFlags()
+  }, [user, loading])
+
+  // VIP-like onboarding prompt using user flag (onboarding_mode='always')
   useEffect(() => {
     if (!user || loading) return
-    if (!isVip(user.id)) return
+    if (onboardingMode !== 'always') return
 
     try {
       const snoozeKey = 'vip_onboarding_snooze_until'
@@ -99,7 +115,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         localStorage.setItem(snoozeKey, String(now + 4 * 60 * 60 * 1000))
       }
     } catch {}
-  }, [user, loading, router])
+  }, [user, loading, router, onboardingMode])
 
 
   // Show loading state while checking auth
