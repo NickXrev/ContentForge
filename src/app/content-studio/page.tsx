@@ -258,7 +258,7 @@ export default function ContentStudioPage() {
       const allPromises: Promise<{platform: string, content: string, error?: string | null}>[] = []
       
       for (const platform of platforms) {
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 6; i++) {
           allPromises.push(
             fetch('/api/generate-content', {
               method: 'POST',
@@ -268,6 +268,7 @@ export default function ContentStudioPage() {
                 platform: platform,
                 tone: clientData?.brand_tone || 'professional',
                 longFormContent: activeContent.longFormContent,
+                variant: i + 1,
                 clientProfile: {
                   name: clientData?.company_name,
                   industry: clientData?.industry,
@@ -281,17 +282,17 @@ export default function ContentStudioPage() {
             }).then(async (res) => {
               if (!res.ok) {
                 const errorText = await res.text().catch(() => 'Unknown error')
-                console.error(`Failed to generate ${platform} post (attempt ${i + 1}):`, errorText)
+                console.error(`Failed to generate ${platform} post (variant ${i + 1}):`, errorText)
                 return { platform, content: '', error: errorText }
               }
               const data = await res.json()
               if (!data.content || !data.content.trim()) {
-                console.warn(`Empty content returned for ${platform} post (attempt ${i + 1})`)
+                console.warn(`Empty content returned for ${platform} post (variant ${i + 1})`)
               }
               return { platform, content: data.content || '', error: null as string | null }
             })
             .catch((error) => {
-              console.error(`Error generating ${platform} post (attempt ${i + 1}):`, error)
+              console.error(`Error generating ${platform} post (variant ${i + 1}):`, error)
               return { platform, content: '', error: error.message || 'Unknown error' }
             })
           )
@@ -324,7 +325,7 @@ export default function ContentStudioPage() {
       // Report failures
       Object.entries(failureCounts).forEach(([platform, count]) => {
         if (count >= 2) {
-          console.error(`[${platform.toUpperCase()}] Posts failed ${count} out of 3 attempts`)
+          console.error(`[${platform.toUpperCase()}] Posts failed ${count} out of 6 variants`)
           // Log the actual error messages for failed attempts
           results.filter(r => r.platform === platform && r.error).forEach((r, idx) => {
             console.error(`[${platform.toUpperCase()}] Failed attempt ${idx + 1}:`, r.error)
@@ -352,7 +353,7 @@ export default function ContentStudioPage() {
           }))
         })
         
-        alert(`Warning: Twitter/X posts failed to generate (${twitterFailures}/3 attempts failed).\n\nCheck the browser console for detailed error information.\n\nIf you see "empty content" errors, the AI may be generating content that gets filtered out during processing.`)
+        alert(`Warning: Twitter/X posts failed to generate (${twitterFailures}/6 variants failed).\n\nCheck the browser console for detailed error information.\n\nIf you see "empty content" errors, the AI may be generating content that gets filtered out during processing.`)
       }
 
       const updated = {

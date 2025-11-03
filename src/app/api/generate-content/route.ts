@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { openRouter } from '@/lib/openrouter'
 
-function createContentPrompt(topic: string, platform: string, tone: string, clientProfile: any, longFormContent?: string): string {
+function createContentPrompt(topic: string, platform: string, tone: string, clientProfile: any, longFormContent?: string, variant?: number): string {
   const { name, industry, target_audience, brand_voice, observed_voice, competitors, goals } = clientProfile || {}
   
   let prompt = `Create ${platform} content about: ${topic}\n\n`
@@ -23,13 +23,13 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
   prompt += `Platform: ${platform}\n\n`
   
   if (platform === 'twitter' || platform === 'x') {
-    prompt += 'Create an X (formerly Twitter) post that is EXACTLY 250 characters or less (including spaces and hashtags). This is CRITICAL - the post must be concise, engaging, and stay under 250 characters. Count characters carefully and ensure the final post does not exceed this limit. Include 1-2 relevant hashtags if they fit within the limit.'
+    prompt += `Create an X (formerly Twitter) post that is EXACTLY 250 characters or less (including spaces and hashtags). Return PLAIN TEXT (no markdown, no quotes, no code fences), a single line (no newlines). Include 0-2 relevant hashtags only if they naturally fit. ${variant ? `This is variant #${variant} of a weekly series—change the hook and angle while staying aligned with the longform content.` : ''}`
   } else if (platform === 'linkedin') {
-    prompt += 'Create a LinkedIn post that is professional and thought-provoking, suitable for B2B audience.'
+    prompt += `Create a LinkedIn post that is professional and thought-provoking, suitable for B2B audience. ${variant ? `This is variant #${variant} for a weekly plan—vary examples, angle, and CTA.` : ''}`
   } else if (platform === 'instagram') {
-    prompt += 'Create an Instagram post with engaging copy and relevant hashtags.'
+    prompt += `Create an Instagram post with engaging copy and relevant hashtags. ${variant ? `This is variant #${variant} for a weekly plan—vary vibe and hook, keep on-theme.` : ''}`
   } else if (platform === 'facebook') {
-    prompt += 'Create a Facebook post that encourages engagement and community interaction.'
+    prompt += `Create a Facebook post that encourages engagement and community interaction. ${variant ? `This is variant #${variant}—vary the story or tip.` : ''}`
   } else if (platform === 'blog') {
     prompt += 'Create a comprehensive, long-form blog post (minimum 2500-3000 words, aim for 3000+ words) with:\n- A compelling headline\n- Well-structured sections with H2 and H3 headings\n- Detailed explanations and examples\n- Real-world use cases\n- Actionable insights and practical tips\n- Statistics and data where relevant\n- Multiple sub-sections within each main section\n- Conclusion with key takeaways\n- Clear formatting with markdown (use # for H1, ## for H2, ### for H3, ** for bold, - for lists)\n\nMake this a thorough, in-depth article that provides substantial value. Do not stop early - continue until you have written a full, comprehensive piece of at least 2500 words.'
   } else {
@@ -41,7 +41,7 @@ function createContentPrompt(topic: string, platform: string, tone: string, clie
 
 export async function POST(request: NextRequest) {
   try {
-    const { topic, platform, tone, clientProfile, longFormContent } = await request.json()
+    const { topic, platform, tone, clientProfile, longFormContent, variant } = await request.json()
 
     if (!topic?.trim()) {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     console.log('OpenRouter API key found, length:', process.env.OPENROUTER_API_KEY.length)
 
     // Create the prompt based on the parameters
-    const prompt = createContentPrompt(topic, platform, tone, clientProfile, longFormContent)
+    const prompt = createContentPrompt(topic, platform, tone, clientProfile, longFormContent, variant)
     
         // Get AI model from admin config
         const { createClient } = await import('@supabase/supabase-js')
@@ -200,9 +200,16 @@ export async function POST(request: NextRequest) {
         console.warn(`[X/Twitter] Post exceeded ${MAX_X_CHARS} characters, truncated from ${originalContent.length} to ${content.length}`)
       }
       
-      // Final validation
+      // Final validation with fallback: derive a short teaser from longFormContent if empty
       if (!content || content.length === 0 || content.trim().length === 0) {
-        console.error('[X/Twitter] Post generation resulted in empty content. Original:', originalContent.substring(0, 200))
+        const fallbackSource = (longFormContent || '').replace(/\s+/g, ' ').trim()
+        if (fallbackSource) {
+          content = (fallbackSource.substring(0, 230) + (fallbackSource.length > 230 ? '…' : '')).trim()
+        }
+      }
+
+      if (!content || content.length === 0 || content.trim().length === 0) {
+        console.error('[X/Twitter] Post generation resulted in empty content after fallback.')
         return NextResponse.json(
           { error: 'Generated content was empty or invalid for X/Twitter. Please try again.' },
           { status: 500 }
