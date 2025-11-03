@@ -476,34 +476,38 @@ export default function HomePage() {
             <span className="text-xs text-gray-500">Last 7 days</span>
           </div>
           <div className="flex items-end justify-between h-32 space-x-2">
-            {contentTrend.map((day, index) => {
-              const maxCount = Math.max(...contentTrend.map(d => d.count), 1)
-              const height = (day.count / maxCount) * 100
+            {(() => {
+              const maxRaw = Math.max(...contentTrend.map(d => d.count), 1)
+              // Round scale up to nearest 5 so increases are visible (e.g., 3/5, 4/5, 5/5)
+              const scaleMax = Math.max(5, Math.ceil(maxRaw / 5) * 5)
+              return contentTrend.map((day, index) => {
+                const height = (day.count / scaleMax) * 100
               const date = new Date(day.date)
               const isToday = date.toDateString() === new Date().toDateString()
               
-              return (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div className="relative w-full flex justify-center mb-2">
-                    <div
-                      className={`w-full rounded-t-lg transition-all duration-500 ${
-                        isToday ? 'bg-gradient-to-t from-blue-500 to-blue-400' : 'bg-gradient-to-t from-gray-300 to-gray-200'
-                      }`}
-                      style={{ height: `${Math.max(height, 8)}%`, minHeight: '8px' }}
-                    >
-                      {day.count > 0 && (
-                        <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700">
-                          {day.count}
-                        </div>
-                      )}
+                return (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div className="relative w-full flex justify-center mb-2">
+                      <div
+                        className={`w-full rounded-t-lg transition-all duration-500 ${
+                          isToday ? 'bg-gradient-to-t from-blue-500 to-blue-400' : 'bg-gradient-to-t from-gray-300 to-gray-200'
+                        }`}
+                        style={{ height: `${Math.max(height, 8)}%`, minHeight: '8px' }}
+                      >
+                        {day.count > 0 && (
+                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700">
+                            {day.count}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })
+            })()}
           </div>
         </motion.div>
 

@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from './AuthProvider'
 
 export function LoginForm() {
-  const [email, setEmail] = useState('test@contentforge.com')
-  const [password, setPassword] = useState('testpassword123')
-  const [fullName, setFullName] = useState('Test User')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isSignUp, setIsSignUp] = useState(false) // Start with sign-in for testing
@@ -90,18 +90,10 @@ export function LoginForm() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-md mx-auto"
     >
-      <div className="p-8 rounded-lg shadow-lg border-4 border-yellow-400" style={{ backgroundColor: 'var(--deploy-color, #e9d5ff)', border: '5px solid yellow' }}>
+      <div className="p-8 rounded-xl shadow-lg border border-gray-200 bg-white">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold" style={{ color: '#111827' }}>🚀 DEPLOYMENT TEST - AUTO COLOR! 🚀</h1>
-          <p className="text-gray-600 mt-2">
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
-          </p>
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-            <p><strong>Test Credentials:</strong></p>
-            <p>Email: test@contentforge.com</p>
-            <p>Password: testpassword123</p>
-            <p className="text-xs mt-1">Click "Create Account" to sign up, then "Sign in" to log in</p>
-          </div>
+          <h1 className="text-2xl font-semibold text-gray-900">{isSignUp ? 'Create your account' : 'Welcome back'}</h1>
+          <p className="text-gray-600 mt-2">{isSignUp ? 'Start your workspace' : 'Sign in to your workspace'}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -153,7 +145,7 @@ export function LoginForm() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md"
+              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md"
             >
               {error}
             </motion.div>
