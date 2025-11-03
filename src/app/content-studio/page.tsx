@@ -988,6 +988,75 @@ export default function ContentStudioPage() {
               </button>
             </div>
 
+            {/* Bulk post by platform */}
+            <div className="mb-4 flex flex-wrap gap-2">
+              {(['linkedin','instagram','twitter'] as const).map((platform) => (
+                <button
+                  key={`bulk-${platform}`}
+                  onClick={async () => {
+                    if (!activeContent) return
+                    try {
+                      const recommendedTimes: Record<string, string[]> = {
+                        twitter: ['10:00', '12:00', '15:00', '17:00', '11:00', '14:00'],
+                        linkedin: ['09:00', '10:30', '13:00', '15:00', '09:30', '11:30'],
+                        instagram: ['11:00', '13:00', '16:00', '18:00', '12:00', '17:00']
+                      }
+                      const nextWeekdays = (startDate: Date, count: number) => {
+                        const dates: string[] = []
+                        const d = new Date(startDate)
+                        while (dates.length < count) {
+                          const day = d.getDay()
+                          if (day !== 0) {
+                            dates.push(d.toISOString().split('T')[0])
+                          }
+                          d.setDate(d.getDate() + 1)
+                        }
+                        return dates
+                      }
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (!user) throw new Error('Not authenticated')
+                      const { data: teamData } = await supabase
+                        .from('team_members')
+                        .select('team_id')
+                        .eq('user_id', user.id)
+                        .single()
+                      if (!teamData) throw new Error('No team found')
+                      const posts = activeContent.socialContent[platform]
+                      const days = nextWeekdays(new Date(), Math.min(6, posts.length))
+                      const inserts = posts.slice(0, 6).map((post, i) => {
+                        const content = typeof post === 'string' ? post : post.content
+                        const imageUrl = typeof post === 'object' ? post.imageUrl : undefined
+                        const scheduled_at = new Date(`${days[i]}T${recommendedTimes[platform][i] || '12:00'}`).toISOString()
+                        return {
+                          team_id: teamData.team_id,
+                          title: `Scheduled ${platform} post`,
+                          content,
+                          platform,
+                          created_by: user.id,
+                          status: 'scheduled',
+                          metadata: {
+                            scheduled_at,
+                            image_url: imageUrl,
+                            source_document_id: activeContent.documentId,
+                            source_title: activeContent.title
+                          }
+                        }
+                      })
+                      if (inserts.length > 0) {
+                        const { error } = await supabase.from('content_documents').insert(inserts)
+                        if (error) throw error
+                        alert(`Posted all to ${platform === 'twitter' ? 'X' : platform} (Mon–Sat).`)
+                      }
+                    } catch (e) {
+                      alert(`Bulk schedule failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-lg text-sm border ${platform==='linkedin' ? 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100' : platform==='instagram' ? 'border-pink-200 text-pink-700 bg-pink-50 hover:bg-pink-100' : 'border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100'}`}
+                >
+                  Post all to {platform === 'twitter' ? 'X' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                </button>
+              ))}
+            </div>
             {/* All posts in a unified card grid - grouped by platform */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* X/Twitter Posts */}
@@ -1014,7 +1083,7 @@ export default function ContentStudioPage() {
                         <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-bold text-sm">
                           ✖
                         </div>
-                        <span className="text-sm font-semibold text-gray-700">X (Twitter)</span>
+                        <span className="text-sm font-semibold text-gray-700">X (Twitter) - Day {i + 1}</span>
                       </div>
                       {isScheduled && (
                         <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full flex items-center space-x-1">
@@ -1079,7 +1148,7 @@ export default function ContentStudioPage() {
                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                           in
                         </div>
-                        <span className="text-sm font-semibold text-gray-700">LinkedIn</span>
+                        <span className="text-sm font-semibold text-gray-700">LinkedIn - Day {i + 1}</span>
                       </div>
                       {isScheduled && (
                         <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full flex items-center space-x-1">
@@ -1139,7 +1208,7 @@ export default function ContentStudioPage() {
                         <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                           IG
                         </div>
-                        <span className="text-sm font-semibold text-gray-700">Instagram</span>
+                        <span className="text-sm font-semibold text-gray-700">Instagram - Day {i + 1}</span>
                       </div>
                       {isScheduled && (
                         <span className="px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full flex items-center space-x-1">
