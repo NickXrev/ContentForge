@@ -46,25 +46,25 @@ const menuItems: MenuItem[] = [
     href: '/'
   },
   {
-    id: 'forge',
-    label: 'Forge',
+    id: 'create',
+    label: 'Create',
     icon: Zap,
     children: [
       {
         id: 'content-studio',
-        label: 'The Forge',
+        label: 'Content Studio',
         icon: Sparkles,
         href: '/content-studio'
       },
       {
         id: 'research',
-        label: 'Quarry',
+        label: 'Research',
         icon: Search,
         href: '/research'
       },
       {
         id: 'editor',
-        label: 'Anvil',
+        label: 'Editor',
         icon: Edit3,
         href: '/editor'
       }
@@ -74,24 +74,24 @@ const menuItems: MenuItem[] = [
   // Removed Todos & Tasks
   {
     id: 'publishing',
-    label: 'Foundry',
+    label: 'Publishing',
     icon: Calendar,
     children: [
       {
         id: 'calendar',
-        label: 'Timeline',
+        label: 'Calendar',
         icon: Calendar,
         href: '/publishing/calendar'
       },
       {
         id: 'drafts',
-        label: 'Inventory',
+        label: 'Drafts',
         icon: FileText,
         href: '/publishing/drafts'
       },
       {
         id: 'scheduled',
-        label: 'Queue',
+        label: 'Scheduled',
         icon: Calendar,
         href: '/publishing/scheduled'
       },
@@ -100,7 +100,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: 'gallery',
-    label: 'Showcase',
+    label: 'Media',
     icon: Image,
     href: '/gallery'
   },

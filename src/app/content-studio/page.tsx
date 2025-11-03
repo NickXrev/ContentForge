@@ -498,7 +498,9 @@ export default function ContentStudioPage() {
         status: 'scheduled',
         metadata: {
           scheduled_at: scheduledDateTime,
-          image_url: postImageUrl
+          image_url: postImageUrl,
+          source_document_id: activeContent.documentId,
+          source_title: activeContent.title
         }
       }])
 
@@ -1030,9 +1032,21 @@ export default function ContentStudioPage() {
                     <p className="text-sm text-gray-700 line-clamp-3 mb-3">{content}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>{content.length} chars</span>
-                      <span className={`${content.length > 250 ? 'text-red-500 font-medium' : content.length > 230 ? 'text-orange-500' : 'text-green-600'}`}>
-                        {250 - content.length} remaining
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedPost({ platform: 'twitter', index: i })
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <span className={`${content.length > 250 ? 'text-red-500 font-medium' : content.length > 230 ? 'text-orange-500' : 'text-green-600'}`}>
+                          {250 - content.length} remaining
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
                 )
@@ -1081,8 +1095,18 @@ export default function ContentStudioPage() {
                       </div>
                     )}
                     <p className="text-sm text-gray-700 line-clamp-4 mb-3">{content}</p>
-                    <div className="text-xs text-gray-500">
-                      {content.length} characters
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{content.length} characters</span>
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedPost({ platform: 'linkedin', index: i })
+                        }}
+                      >
+                        Edit
+                      </button>
                     </div>
                   </motion.div>
                 )
@@ -1131,8 +1155,18 @@ export default function ContentStudioPage() {
                       </div>
                     )}
                     <p className="text-sm text-gray-700 line-clamp-4 mb-3">{content}</p>
-                    <div className="text-xs text-gray-500">
-                      {content.length} characters
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{content.length} characters</span>
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedPost({ platform: 'instagram', index: i })
+                        }}
+                      >
+                        Edit
+                      </button>
                     </div>
                   </motion.div>
                 )
@@ -1182,7 +1216,7 @@ export default function ContentStudioPage() {
                 // Check if this post already exists in the database
                 const { data: existingPosts } = await supabase
                   .from('content_documents')
-                  .select('id, status')
+                  .select('id, status, metadata')
                   .eq('team_id', teamData.team_id)
                   .eq('platform', selectedPost.platform)
                   .eq('content', postContent)
@@ -1201,8 +1235,11 @@ export default function ContentStudioPage() {
                     .update({
                       status: status,
                       metadata: {
+                        ...(existingPosts[0].metadata || {}),
                         scheduled_at: scheduledDateTime,
-                        image_url: postImageUrl
+                        image_url: postImageUrl,
+                        source_document_id: activeContent.documentId,
+                        source_title: activeContent.title
                       },
                       updated_at: new Date().toISOString()
                     })

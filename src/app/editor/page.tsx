@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import CollaborativeEditor from '@/components/editor/CollaborativeEditor'
+import AssociatedSocialPosts from './AssociatedSocialPosts'
 import DocumentManager from '@/components/editor/DocumentManager'
 import { Button } from '@/components/ui/Button'
 import { 
@@ -296,17 +297,23 @@ export default function EditorPage() {
               </div>
             </div>
 
-            {/* Editor */}
-            <CollaborativeEditor
-              documentId={currentDocument.id}
-              teamId={teamId}
-              userId={user.id}
-              userName={user.user_metadata?.full_name || user.email || 'Anonymous'}
-              onSave={handleSaveDocument}
-              readOnly={currentDocument.readOnly}
-              currentDocument={currentDocument}
-              platform={currentDocument.platform}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                {/* Editor */}
+                <CollaborativeEditor
+                  documentId={currentDocument.id}
+                  teamId={teamId}
+                  userId={user.id}
+                  userName={user.user_metadata?.full_name || user.email || 'Anonymous'}
+                  onSave={handleSaveDocument}
+                  readOnly={currentDocument.readOnly}
+                  currentDocument={currentDocument}
+                  platform={currentDocument.platform}
+                />
+              </div>
+              {/* Associated Social Posts */}
+              <AssociatedSocialPosts parentId={currentDocument.id} parentTitle={currentDocument.title} teamId={teamId} />
+            </div>
           </div>
         ) : null}
       </div>
