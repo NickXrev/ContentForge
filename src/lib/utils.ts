@@ -45,3 +45,8 @@ export function debounce<T extends (...args: any[]) => any>(
   }
 }
 
+export function isVip(userId?: string | null) {
+  const vipId = process.env.NEXT_PUBLIC_VIP_USER_ID
+  return !!userId && !!vipId && userId === vipId
+}
+

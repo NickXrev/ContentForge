@@ -7,6 +7,8 @@ import Sidebar from './Sidebar'
 import Header from './Header'
 import RightSidebar from './RightSidebar'
 import { supabase } from '@/lib/supabase'
+import { isVip } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -15,6 +17,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, loading } = useAuth()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const router = useRouter()
 
   // Preload trending topics when user logs in
   useEffect(() => {
@@ -77,6 +80,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
       preloadTopics()
     }
   }, [user, loading])
+
+  // VIP-only onboarding prompt with snooze
+  useEffect(() => {
+    if (!user || loading) return
+    if (!isVip(user.id)) return
+
+    try {
+      const snoozeKey = 'vip_onboarding_snooze_until'
+      const until = localStorage.getItem(snoozeKey)
+      const now = Date.now()
+      if (until && Number(until) > now) return
+
+      const wants = confirm('Start demo onboarding now? (You can re-run it anytime)')
+      if (wants) {
+        router.push('/onboarding?force=1')
+      } else {
+        localStorage.setItem(snoozeKey, String(now + 4 * 60 * 60 * 1000))
+      }
+    } catch {}
+  }, [user, loading, router])
 
 
   // Show loading state while checking auth

@@ -2,6 +2,8 @@
 
 import React from 'react'
 import { Menu, Bell, Search, HelpCircle, User } from 'lucide-react'
+import Link from 'next/link'
+import { isVip } from '@/lib/utils'
 import { useAuth } from '@/components/auth/AuthProvider'
 
 interface HeaderProps {
@@ -76,6 +78,12 @@ export default function Header({ user, onSidebarToggle }: HeaderProps) {
             <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
               Upgrade Plan
             </button>
+
+            {isVip(user?.id) && (
+              <Link href="/onboarding?force=1" className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                Re-run Onboarding
+              </Link>
+            )}
 
             <button
               onClick={async () => {
