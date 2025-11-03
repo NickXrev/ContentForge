@@ -197,22 +197,60 @@ export function LoginForm() {
 
           {/* Additional providers (placeholders) */}
           <div className="grid grid-cols-2 gap-3 mt-3">
-            {[
-              { id: 'github', label: 'GitHub' },
-              { id: 'microsoft', label: 'Microsoft' },
-              { id: 'apple', label: 'Apple' },
-              { id: 'linkedin', label: 'LinkedIn' },
-            ].map(p => (
-              <button
-                key={p.id}
-                type="button"
-                disabled
-                title="Configure in Supabase → Auth → Providers to enable"
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-              >
-                {p.label}
-              </button>
-            ))}
+            {/* Facebook */}
+            <button
+              type="button"
+              disabled
+              title="Configure in Supabase → Auth → Providers to enable"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.675 0H1.325C.593 0 0 .593 0 1.326v21.348C0 23.407.593 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.894-4.788 4.66-4.788 1.325 0 2.463.099 2.794.143v3.24l-1.918.001c-1.504 0-1.796.715-1.796 1.764v2.313h3.59l-.467 3.622h-3.123V24h6.127C23.407 24 24 23.407 24 22.674V1.326C24 .593 23.407 0 22.675 0z"/>
+              </svg>
+              <span className="font-medium">Facebook</span>
+            </button>
+
+            {/* Microsoft */}
+            <button
+              type="button"
+              disabled
+              title="Configure in Supabase → Auth → Providers to enable"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#F25022" d="M0 0h10.35v10.35H0z"/>
+                <path fill="#7FBA00" d="M12.65 0H23v10.35H12.65z"/>
+                <path fill="#00A4EF" d="M0 12.65h10.35V23H0z"/>
+                <path fill="#FFB900" d="M12.65 12.65H23V23H12.65z"/>
+              </svg>
+              <span className="font-medium">Microsoft</span>
+            </button>
+
+            {/* Apple */}
+            <button
+              type="button"
+              disabled
+              title="Configure in Supabase → Auth → Providers to enable"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.365 1.43c.01.14.015.282.015.427 0 1.036-.38 1.912-1.14 2.626-.761.713-1.678 1.09-2.752 1.128-.012-.14-.018-.284-.018-.432 0-1 .37-1.862 1.108-2.588C14.33 1.865 15.28 1.5 16.365 1.43zM20.8 17.59c-.378.874-.83 1.67-1.355 2.388-.705.978-1.343 1.468-1.918 1.468-.36 0-.793-.127-1.3-.382-.508-.254-.975-.382-1.403-.382-.45 0-.93.128-1.44.382-.509.255-.932.385-1.268.392-.598.025-1.25-.463-1.957-1.463-.533-.718-.994-1.525-1.383-2.422-.59-1.348-.885-2.651-.885-3.91 0-1.148.247-2.136.74-2.963.392-.66.914-1.18 1.566-1.56.652-.382 1.356-.581 2.113-.6.414 0 .956.147 1.625.44.668.295 1.1.444 1.294.444.141 0 .591-.17 1.353-.512.726-.323 1.335-.456 1.828-.398 1.35.109 2.366.646 3.05 1.61-1.213.734-1.818 1.766-1.818 3.093 0 1.121.42 2.053 1.262 2.795.377.355.798.63 1.264.824-.101.29-.206.567-.317.831z"/>
+              </svg>
+              <span className="font-medium">Apple</span>
+            </button>
+
+            {/* LinkedIn */}
+            <button
+              type="button"
+              disabled
+              title="Configure in Supabase → Auth → Providers to enable"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#0A66C2" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4.983 3.5C4.983 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.483 1.12 2.483 2.5zM.5 8h4V24h-4V8zm7.5 0h3.8v2.2h.05c.53-1.005 1.825-2.2 3.755-2.2C19.9 8 22 10.06 22 13.7V24h-4v-8.5c0-2.03-.04-4.64-2.83-4.64-2.83 0-3.265 2.21-3.265 4.49V24h-4V8z"/>
+              </svg>
+              <span className="font-medium">LinkedIn</span>
+            </button>
           </div>
         </div>
 
